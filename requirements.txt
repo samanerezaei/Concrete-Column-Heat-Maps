@@ -1,0 +1,4 @@
+TensorFlow version: 2.15.0
+Keras version: 2.15.0
+NumPy version: 1.26.3
+Pandas version: 2.2.0
