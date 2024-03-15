@@ -173,14 +173,14 @@ elif section == 'Guidelines':
         """, unsafe_allow_html=True)
 
     st.markdown('### Uploading Images')
-    st.write('- Click on the "Upload Images" button on the homepage.')
+    #st.write('- Click on the "Upload Images" button on the homepage.')
     st.write('- Select the images of the damaged concrete columns from your device.')
     st.write('- Ensure that the images are clear and show the damages accurately.')
 
     st.markdown('### Inputting Aspect Ratio Values')
     st.write('- Measure the dimensions of the concrete column (width, height, etc.).')
-    st.write('- Calculate the aspect ratio values using the provided formula.')
-    st.write('- Input the aspect ratio values into the corresponding fields on the application.')
+    st.write('- Calculate the aspect ratio value that is equal to dividing height by width.')
+    st.write('- Input the aspect ratio value into the corresponding field on the application.')
 
     st.markdown('### Prediction')
     st.write('- Click on the "Predict" button to initiate the prediction process.')
@@ -189,7 +189,7 @@ elif section == 'Guidelines':
     st.markdown('### Reviewing Results')
     st.write('- Once the assessment is complete, the results will be displayed on the screen.')
     st.write("""
-        <p style='text-align: justify;'>- The No. class of the heatmap, the range of the experienced drift or Lost resistance (based on the heatmap type), and the digitized image of the damaged concrete column (the image that shows the damaged zone of the column) will be shown as results. </p>
+        <p style='text-align: justify;'>- Related to the predicted class number of the heatmap, the range of the experienced drift or Lost resistance (based on the heatmap type) is determined, and the digitized image of the damaged concrete column (the image that shows the damaged zone of the column) will be shown as results. </p>
         """, unsafe_allow_html=True)
 
 
@@ -199,7 +199,7 @@ elif section == 'Guidelines':
         """, unsafe_allow_html=True)
              
     st.write("""
-        <p style='text-align: justify;'> - Double-check the aspect ratio values inputted to ensure accuracy in the assessment.</p>
+        <p style='text-align: justify;'> - Double-check the aspect ratio value inputted to ensure accuracy in the assessment.</p>
         """, unsafe_allow_html=True)
 
     st.write("""
@@ -207,7 +207,7 @@ elif section == 'Guidelines':
         """, unsafe_allow_html=True)
 
     st.write("""
-        <p style='text-align: justify;'> - Please note that all the above must be followed to effectively assess damaged concrete columns post-earthquake, ensuring results.</p>
+        <p style='text-align: justify;'> - Please ensure that all the aforementioned guidelines are followed accurately to accurately predict the class of heatmaps associated with the uploaded image. Adherence to these guidelines is crucial for effectively assessing damaged concrete columns post-earthquake and ensuring accurate results..</p>
         """, unsafe_allow_html=True)
 
 
