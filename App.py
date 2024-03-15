@@ -344,16 +344,3 @@ elif section == 'Prediction':
         col2.image(cv2.resize(preprocessed_img.squeeze(), (100, (int(aspect))*100)), caption='Digitized Image',use_column_width=True)
         col3.image(crack_resized, caption='Critical zones for Cracking Damege', use_column_width=True)
         col4.image(crushing_resized, caption='Critical zones for Crushing Damage', use_column_width=True)
-        
-# Displaying the versions of all libraries used
-libraries = {
-    "opencv-python": cv2.__version__,
-    "numpy": np.__version__,
-    "Pillow": Image.__version__,
-    "streamlit": st.__version__,
-}
-
-# Displaying library versions
-st.header("Library Versions")
-for library, version in libraries.items():
-    st.write(f"{library}: {version}")
