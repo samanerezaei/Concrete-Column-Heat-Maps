@@ -1,4 +1,7 @@
-TensorFlow version: 2.15.0
-Keras version: 2.15.0
-NumPy version: 1.26.3
-Pandas version: 2.2.0
+opencv-python : 4.9.0
+
+numpy : 1.24.3
+
+PIL : 10.2.0
+
+streamlit: 1.31.1

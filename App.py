@@ -7,7 +7,9 @@ from PIL import Image
 import streamlit as st
 from tensorflow.keras.models import load_model
 
+
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
+    
 ## Visualization
 if section == 'Home':
     st.header('Welcome to the:')
