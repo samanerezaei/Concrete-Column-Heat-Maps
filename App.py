@@ -5,7 +5,16 @@ import requests
 import numpy as np
 from PIL import Image
 import streamlit as st
+import tensorflow as tf
 from tensorflow.keras.models import load_model
+
+# Print version information
+st.write("OpenCV ==", cv2.__version__)
+st.write("Streamlit ==", st.__version__)
+st.write("Pillow ==", Image.__version__)
+st.write("numpy ==", np.__version__)
+st.write("tensorflow ==", tf.__version__)
+# Add more print statements for other libraries/modules as needed
 
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
     
