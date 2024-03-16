@@ -3,18 +3,19 @@ import cv2
 import time
 import requests
 import numpy as np
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-# Print version information
-st.write("OpenCV ==", cv2.__version__)
-st.write("Streamlit ==", st.__version__)
-st.write("Pillow ==", Image.__version__)
-st.write("numpy ==", np.__version__)
-st.write("tensorflow ==", tf.__version__)
-st.write("requests ==", requests.__version__)
+# Display version information for Streamlit and other libraries used in the code
+st.write("Library Versions:")
+st.write(f"Streamlit=={st.__version__}")
+st.write(f"OpenCV=={cv2.__version__}")
+st.write(f"Pillow=={Image.__version__}")
+st.write(f"numpy=={np.__version__}")
+st.write(f"TensorFlow=={tf.__version__}")
+st.write(f"requests=={requests.__version__}")
 # Add more print statements for other libraries/modules as needed
 
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
