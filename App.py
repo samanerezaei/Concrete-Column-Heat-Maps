@@ -14,6 +14,7 @@ st.write("Streamlit ==", st.__version__)
 st.write("Pillow ==", Image.__version__)
 st.write("numpy ==", np.__version__)
 st.write("tensorflow ==", tf.__version__)
+st.write("requests ==", requests.__version__)
 # Add more print statements for other libraries/modules as needed
 
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
