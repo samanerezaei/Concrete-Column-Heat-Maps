@@ -1,4 +1,5 @@
 import io
+import os
 import cv2
 import time
 import requests
@@ -255,25 +256,38 @@ elif section == 'Prediction':
     TYPE = st.selectbox('Select the type of Heat Map', ["Based on Drift", "Based on DIS"])
 
     # Load the model
-    if TYPE == "Based on Drift":  
-        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/meta_model.h5"
-        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/model1.h5"
-        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/model2.h5"
-
-    elif TYPE == "Based on DIS":  
-        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/meta_model.h5"
-        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/model1.h5"
-        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/model2.h5"
+    # Define model links based on the selected type
+    if TYPE == "Based on Drift":
+        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/meta_model.h5"
+        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/model1.h5"
+        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/model2.h5"
+    elif TYPE == "Based on DIS":
+        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/meta_model.h5"
+        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/model1.h5"
+        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/model2.h5"
 
     # Download the meta-model file
     response_meta_model = requests.get(meta_model_link)
     response_model1 = requests.get(model1_link)
     response_model2 = requests.get(model2_link)
 
-    # Load the meta-model from the downloaded content
-    meta_model = load_model(io.BytesIO(response_meta_model.content))
-    model1 = load_model(io.BytesIO(response_model1.content))
-    model2 = load_model(io.BytesIO(response_model2.content))
+    # Save the downloaded content to temporary files
+    with open("meta_model.h5", "wb") as f:
+        f.write(response_meta_model.content)
+    with open("model1.h5", "wb") as f:
+        f.write(response_model1.content)
+    with open("model2.h5", "wb") as f:
+        f.write(response_model2.content)
+
+    # Load the meta-model and other models from temporary files
+    meta_model = load_model("meta_model.h5")
+    model1 = load_model("model1.h5")
+    model2 = load_model("model2.h5")
+
+    # Remove temporary files after loading the models
+    os.remove("meta_model.h5")
+    os.remove("model1.h5")
+    os.remove("model2.h5")
 
     # Get length and width values from the user
     aspect = st.number_input('Enter the aspect ration (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
