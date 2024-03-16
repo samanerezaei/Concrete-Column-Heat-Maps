@@ -48,15 +48,21 @@ if section == 'Home':
 
     st.markdown('### Authors:')
     # Define paths to social media icons
-    linkedin_icon_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\linkedin.jpg"
-    email_icon_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\email.png"
+    #linkedin_icon_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\linkedin.jpg"
+
+    #email_icon_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\email.png"
 
     # Create columns to display images and information for the first row
     col1, col2, col3 = st.columns([1, 0.1, 1])
 
     # Load and display the images using PIL for the first row
     with col1:
-        person1_image = Image.open(r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Mohammadjavad Hamidia.jpg")
+        # Fetch the image from the URL
+        image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Mohammadjavad%20Hamidia.jpg?raw=true"
+        response = requests.get(image_url)
+
+        # Open the image using PIL
+        person1_image = Image.open(io.BytesIO(response.content))
         st.image(person1_image, use_column_width=True)
         st.header("Mohammadjavad Hamidia")
         st.markdown("### Assistant Professor")
@@ -95,7 +101,12 @@ if section == 'Home':
         col2.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
 
     with col3:
-        person2_image = Image.open(r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Samane Rezaei.jpg")
+        # Fetch the image from the URL
+        image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Samane%20Rezaei.jpg?raw=true"
+        response = requests.get(image_url)
+
+        # Open the image using PIL
+        person2_image = Image.open(io.BytesIO(response.content))
         st.image(person2_image, use_column_width=True)
         st.header("Samane Rezaei")
         st.markdown("### Ph.D. Student in Structural Engineering")
@@ -137,7 +148,14 @@ if section == 'Home':
     col4, col5, col6 = st.columns([1, 0.1, 1])
 
     with col4:
-        person3_image = Image.open(r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Kiarash Dolatshahi.jpeg")
+        # Fetch the image from the URL
+        image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Kiarash%20Dolatshahi.jpeg?raw=true"
+        response = requests.get(image_url)
+
+        # Open the image using PIL
+        person3_image = Image.open(io.BytesIO(response.content))
+
+        # Display the image
         st.image(person3_image, use_column_width=True)
         st.header("Kiarash M.Dolatshahi")
         st.markdown("### Assistant Professor")
