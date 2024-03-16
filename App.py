@@ -284,11 +284,6 @@ elif section == 'Prediction':
     model1 = load_model("model1.h5")
     model2 = load_model("model2.h5")
 
-    # Remove temporary files after loading the models
-    os.remove("meta_model.h5")
-    os.remove("model1.h5")
-    os.remove("model2.h5")
-
     # Get length and width values from the user
     aspect = st.number_input('Enter the aspect ration (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
 
