@@ -258,10 +258,12 @@ elif section == 'Prediction':
     # Load the model
     # Define model links based on the selected type
     if TYPE == "Based on Drift":
+        EDP = 'Drift'
         meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/meta_model.h5"
         model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/model1.h5"
         model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/model2.h5"
     elif TYPE == "Based on DIS":
+        EDP = 'DIS'
         meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/meta_model.h5"
         model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/model1.h5"
         model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/model2.h5"
@@ -288,11 +290,14 @@ elif section == 'Prediction':
     aspect = st.number_input('Enter the aspect ration (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
 
     if aspect <= 2:
-        AspectCategory = '0 - 2'
+        InitiateRange = '0'
+        FinalRange = '2'
     elif (aspect > 2) and (aspect <= 4):
-        AspectCategory = '2 - 4'
+        InitiateRange = '2'
+        FinalRange = '4'
     elif aspect > 4:
-        AspectCategory = '4 - 100'
+        InitiateRange = '4'
+        FinalRange = '100'
         
     # Load the image
     uploaded_image = st.file_uploader('Upload Image')
@@ -344,7 +349,7 @@ elif section == 'Prediction':
                 Range = 'more than 65%'
             
             EDP_text = f"The concrete column has lost {Range} of its strength."
-                        
+           
     # Button to trigger prediction
     if st.button('Predict'):
         my_bar = st.progress(0)
@@ -356,17 +361,19 @@ elif section == 'Prediction':
         # Display the predicted class with increased font size
         st.markdown(f"<h3>Predicted Class: {predicted_class}</h3>", unsafe_allow_html=True)
         st.markdown(f"<h3>{EDP_text}</h3>", unsafe_allow_html=True)
-    
-        # Construct file paths for Crack and Crushing images
-        Crack = f'E:/sharif/Papers/Heat map/Concrete/Final Heat Maps/{TYPE}/Aspect Ratio {AspectCategory}/Crack/{predicted_class}.jpeg'
-        Crushing = f'E:/sharif/Papers/Heat map/Concrete/Final Heat Maps/{TYPE}/Aspect Ratio {AspectCategory}/Crushing/{predicted_class}.jpeg'
+        
+        # Fetch the image from the URL
+        crack_url = f'https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Final%20Heat%20Maps/Based%20on%20{EDP}/Aspect%20Ratio%20{InitiateRange}%20-%20{FinalRange}/Crack/{predicted_class}.jpeg?raw=true'
+        crushing_url = f'https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Final%20Heat%20Maps/Based%20on%20{EDP}/Aspect%20Ratio%20{InitiateRange}%20-%20{FinalRange}/Crushing/{predicted_class}.jpeg?raw=true'
+        response_crack = requests.get(crack_url)
+        response_crushing = requests.get(crushing_url)
         
         # Create columns to display images in a line
         col1, col2, col3, col4 = st.columns(4)
 
-    # Load the images using PIL
-        crack_image = Image.open(Crack)
-        crushing_image = Image.open(Crushing)
+        # Load the images using PIL
+        crack_image = Image.open(io.BytesIO(response_crack.content))
+        crushing_image = Image.open(io.BytesIO(response_crushing.content))
         original_image = Image.open(uploaded_image)
         crack_resized = crack_image.resize((100, (int(aspect))*100))
         crushing_resized = crushing_image.resize((100, (int(aspect))*100))
