@@ -7,7 +7,6 @@ from PIL import Image
 import streamlit as st
 from tensorflow.keras.models import load_model
 
-st.write(cv2.__version__)
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
     
 ## Visualization
