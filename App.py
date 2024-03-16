@@ -256,18 +256,24 @@ elif section == 'Prediction':
 
     # Load the model
     if TYPE == "Based on Drift":  
-        meta_model_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Models of Drift classification\meta_model.h5"
-        model1_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Models of Drift classification\model1.h5"
-        model2_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Models of Drift classification\model2.h5"
+        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/meta_model.h5"
+        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/model1.h5"
+        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/model2.h5"
 
     elif TYPE == "Based on DIS":  
-        meta_model_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Models of DIS classification\meta_model.h5"
-        model1_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Models of DIS classification\model1.h5"
-        model2_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\Models of DIS classification\model2.h5"
+        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/meta_model.h5"
+        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/model1.h5"
+        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/model2.h5"
 
-    meta_model = load_model(meta_model_path)
-    model1 = load_model(model1_path)
-    model2 = load_model(model2_path)
+    # Download the meta-model file
+    response_meta_model = requests.get(meta_model_link)
+    response_model1 = requests.get(model1_link)
+    response_model2 = requests.get(model2_link)
+
+    # Load the meta-model from the downloaded content
+    meta_model = load_model(io.BytesIO(response_meta_model.content))
+    model1 = load_model(io.BytesIO(response_model1.content))
+    model2 = load_model(io.BytesIO(response_model2.content))
 
     # Get length and width values from the user
     aspect = st.number_input('Enter the aspect ration (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
