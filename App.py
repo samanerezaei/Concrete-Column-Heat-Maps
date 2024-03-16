@@ -1,5 +1,5 @@
 import io
-import cv2
+from opencv import cv2
 import time
 import requests
 import numpy as np
