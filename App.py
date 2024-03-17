@@ -40,10 +40,19 @@ if section == 'Home':
 
     st.markdown('### Authors:')
     # Define paths to social media icons
-    #linkedin_icon_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\linkedin.jpg"
-
-    #email_icon_path = r"C:\Users\samanerezaei\Desktop\Github\Concrete-Column-Heat-Maps\email.png"
-
+    
+    ##### Email
+    response_email = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
+    image_bytes_email = io.BytesIO(response_email.content)
+    email_icon = Image.open(image_bytes_email)
+    email_icon_resized = email_icon.resize((30, 30))
+    
+    ###### Linkedin
+    response_linkedin = requests.get("https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png")
+    image_bytes_linkedin = io.BytesIO(response_linkedin.content)
+    linkedin_icon = Image.open(image_bytes_linkedin)
+    linkedin_icon_resized = linkedin_icon.resize((30, 30))
+        
     # Create columns to display images and information for the first row
     col1, col2, col3 = st.columns([1, 0.1, 1])
 
@@ -61,16 +70,6 @@ if section == 'Home':
         st.write("Department of Civil, Water and Environmental Engineering at Shahid Beheshti University")
         
         ############################### Email
-        # Fetch the image from the URL
-        response = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
-        image_bytes = io.BytesIO(response.content)
-
-        # Open the image using PIL
-        email_icon = Image.open(image_bytes)
-
-        # Resize the image
-        email_icon_resized = email_icon.resize((30, 30))
-
         # Display the email icon with defined width and height
         col1, col2 = st.columns([0.2, 1])
         col1.image(email_icon_resized)
@@ -78,15 +77,6 @@ if section == 'Home':
 
         ############################### LinkedIn
         # Fetch the image from the URL
-        response = requests.get("https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png")
-        image_bytes = io.BytesIO(response.content)
-
-        # Open the image using PIL
-        linkedin_icon = Image.open(image_bytes)
-
-        # Resize the image
-        linkedin_icon_resized = linkedin_icon.resize((30, 30))
-
         # Display the email icon with defined width and height
         col1, col2 = st.columns([0.2, 1])
         col1.image(linkedin_icon_resized)
@@ -105,32 +95,12 @@ if section == 'Home':
         st.write("Department of Civil Engineering at Sharif University of Technology")
 
         ############################### Email
-        # Fetch the image from the URL
-        response = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
-        image_bytes = io.BytesIO(response.content)
-
-        # Open the image using PIL
-        email_icon = Image.open(image_bytes)
-
-        # Resize the image
-        email_icon_resized = email_icon.resize((30, 30))
-
         # Display the email icon with defined width and height
         col1, col2 = st.columns([0.2, 1])
         col1.image(email_icon_resized)
         col2.write("[Email](samane.rezaei@sharif.edu)")
 
         ############################### LinkedIn
-        # Fetch the image from the URL
-        response = requests.get("https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png")
-        image_bytes = io.BytesIO(response.content)
-
-        # Open the image using PIL
-        linkedin_icon = Image.open(image_bytes)
-
-        # Resize the image
-        linkedin_icon_resized = linkedin_icon.resize((30, 30))
-
         # Display the email icon with defined width and height
         col1, col2 = st.columns([0.2, 1])
         col1.image(linkedin_icon_resized)
@@ -154,32 +124,12 @@ if section == 'Home':
         st.write("Department of Civil Engineering at Sharif University of Technology")
 
         ############################### Email
-        # Fetch the image from the URL
-        response = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
-        image_bytes = io.BytesIO(response.content)
-
-        # Open the image using PIL
-        email_icon = Image.open(image_bytes)
-
-        # Resize the image
-        email_icon_resized = email_icon.resize((30, 30))
-
         # Display the email icon with defined width and height
         col1, col2 = st.columns([0.2, 1])
         col1.image(email_icon_resized)
         col2.write("[Email](dolatshahi@sharif.edu)")
 
         ############################### LinkedIn
-        # Fetch the image from the URL
-        response = requests.get("https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png")
-        image_bytes = io.BytesIO(response.content)
-
-        # Open the image using PIL
-        linkedin_icon = Image.open(image_bytes)
-
-        # Resize the image
-        linkedin_icon_resized = linkedin_icon.resize((30, 30))
-
         # Display the email icon with defined width and height
         col1, col2 = st.columns([0.2, 1])
         col1.image(linkedin_icon_resized)
