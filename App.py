@@ -1,11 +1,13 @@
 import io
 import os
+import cv2
+import time
 import requests
 import numpy as np
-import streamlit as st
 from PIL import Image
+import streamlit as st
+import tensorflow as tf
 from tensorflow.keras.models import load_model
-from skimage import color, exposure, transform
 
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
     
@@ -178,27 +180,28 @@ elif section == 'Guidelines':
     st.write("""
         <p style='text-align: justify;'> - Please ensure that all the aforementioned guidelines are followed accurately to accurately predict the class of heatmaps associated with the uploaded image. Adherence to these guidelines is crucial for effectively assessing damaged concrete columns post-earthquake and ensuring accurate results..</p>
         """, unsafe_allow_html=True)
+
+
  
 elif section == 'Prediction':
     # Function to preprocess the image for model input
     def preprocess_image(image, target_size=(100, 100)):
         # Resize image to target size
-        resized_image = transform.resize(image, target_size)
-        
+        resized_image = image.resize(target_size)
         # Convert to grayscale
-        grayscale_image = color.rgb2gray(resized_image)
+        gray = resized_image.convert('L')
         
         # Enhance contrast using histogram equalization
-        enhanced_image = exposure.equalize_hist(grayscale_image)
+        enhanced_image = Image.fromarray(np.uint8(np.array(gray)))
         
         # Apply adaptive thresholding for better feature capture
-        thresholded_image = exposure.rescale_intensity(enhanced_image)
+        thresholded_image = enhanced_image.point(lambda p: p > 127 and 255) 
         
         # Convert grayscale to RGB
-        rgb_image = color.gray2rgb(thresholded_image)
+        rgb_image = thresholded_image.convert('RGB')
         
         # Expand dimensions to match model input shape
-        return np.expand_dims(rgb_image, axis=0)
+        return np.expand_dims(np.array(rgb_image), axis=0)
 
     TYPE = st.selectbox('Select the type of Heat Map', ["Based on Drift", "Based on DIS"])
 
@@ -250,9 +253,9 @@ elif section == 'Prediction':
     uploaded_image = st.file_uploader('Upload Image')
     if uploaded_image is not None:
         # Convert file uploader data to numpy array
-        file_bytes = np.asarray(bytearray(uploaded_image.read()), dtype=np.uint8)
+        #file_bytes = np.asarray(bytearray(uploaded_image.read()), dtype=np.uint8)
         # Decode image
-        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        img = Image.open(io.BytesIO(uploaded_image))
         
         # Preprocess the image
         preprocessed_img = preprocess_image(img)
