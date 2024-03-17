@@ -7,28 +7,8 @@ from PIL import Image
 from tensorflow.keras.models import load_model
 from skimage import color, exposure, transform
 
-# Function to preprocess the image for model input
-def preprocess_image(image, target_size=(100, 100)):
-    # Resize image to target size
-    resized_image = transform.resize(image, target_size)
-    
-    # Convert to grayscale
-    grayscale_image = color.rgb2gray(resized_image)
-    
-    # Enhance contrast using histogram equalization
-    enhanced_image = exposure.equalize_hist(grayscale_image)
-    
-    # Apply adaptive thresholding for better feature capture
-    thresholded_image = exposure.rescale_intensity(enhanced_image)
-    
-    # Convert grayscale to RGB
-    rgb_image = color.gray2rgb(thresholded_image)
-    
-    # Expand dimensions to match model input shape
-    return np.expand_dims(rgb_image, axis=0)
-
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
-
+    
 ## Visualization
 if section == 'Home':
     st.header('Welcome to the:')
@@ -198,8 +178,6 @@ elif section == 'Guidelines':
     st.write("""
         <p style='text-align: justify;'> - Please ensure that all the aforementioned guidelines are followed accurately to accurately predict the class of heatmaps associated with the uploaded image. Adherence to these guidelines is crucial for effectively assessing damaged concrete columns post-earthquake and ensuring accurate results..</p>
         """, unsafe_allow_html=True)
-
-
  
 elif section == 'Prediction':
     # Function to preprocess the image for model input
@@ -254,7 +232,7 @@ elif section == 'Prediction':
     meta_model = load_model("meta_model.h5")
     model1 = load_model("model1.h5")
     model2 = load_model("model2.h5")
-    
+
     # Get length and width values from the user
     aspect = st.number_input('Enter the aspect ration (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
 
@@ -268,15 +246,16 @@ elif section == 'Prediction':
         InitiateRange = '4'
         FinalRange = '100'
         
-    # File uploader
-    uploaded_image = st.file_uploader("Upload an image of the damaged concrete column", type=["jpg", "jpeg", "png"])
-
+    # Load the image
+    uploaded_image = st.file_uploader('Upload Image')
     if uploaded_image is not None:
         # Convert file uploader data to numpy array
-        image = np.array(Image.open(uploaded_image))
+        file_bytes = np.asarray(bytearray(uploaded_image.read()), dtype=np.uint8)
+        # Decode image
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
         
         # Preprocess the image
-        preprocessed_img = preprocess_image(image)
+        preprocessed_img = preprocess_image(img)
         
         # Make predictions using the loaded model
         predictions1 = model1.predict(preprocessed_img)
