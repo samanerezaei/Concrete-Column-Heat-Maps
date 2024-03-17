@@ -192,7 +192,7 @@ elif section == 'Prediction':
         
         # Enhance contrast using PIL's ImageEnhance module
         enhancer = ImageEnhance.Contrast(resized_image)
-        contrast_enhanced = enhancer.enhance(4.0)  # Adjust the enhancement factor as needed
+        contrast_enhanced = enhancer.enhance(10.0)  # Adjust the enhancement factor as needed
         
         # Convert to grayscale
         gray = contrast_enhanced.convert('L')
