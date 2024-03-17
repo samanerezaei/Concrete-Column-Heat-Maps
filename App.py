@@ -1,16 +1,34 @@
 import io
 import os
-import cv2
-import time
 import requests
 import numpy as np
-from PIL import Image, UnidentifiedImageError
 import streamlit as st
-import tensorflow as tf
+from PIL import Image
 from tensorflow.keras.models import load_model
+from skimage import color, exposure, transform
+
+# Function to preprocess the image for model input
+def preprocess_image(image, target_size=(100, 100)):
+    # Resize image to target size
+    resized_image = transform.resize(image, target_size)
+    
+    # Convert to grayscale
+    grayscale_image = color.rgb2gray(resized_image)
+    
+    # Enhance contrast using histogram equalization
+    enhanced_image = exposure.equalize_hist(grayscale_image)
+    
+    # Apply adaptive thresholding for better feature capture
+    thresholded_image = exposure.rescale_intensity(enhanced_image)
+    
+    # Convert grayscale to RGB
+    rgb_image = color.gray2rgb(thresholded_image)
+    
+    # Expand dimensions to match model input shape
+    return np.expand_dims(rgb_image, axis=0)
 
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
-    
+
 ## Visualization
 if section == 'Home':
     st.header('Welcome to the:')
@@ -187,18 +205,19 @@ elif section == 'Prediction':
     # Function to preprocess the image for model input
     def preprocess_image(image, target_size=(100, 100)):
         # Resize image to target size
-        resized_image = cv2.resize(image, target_size)
+        resized_image = transform.resize(image, target_size)
+        
         # Convert to grayscale
-        gray = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
+        grayscale_image = color.rgb2gray(resized_image)
         
         # Enhance contrast using histogram equalization
-        enhanced_image = cv2.equalizeHist(gray)
+        enhanced_image = exposure.equalize_hist(grayscale_image)
         
         # Apply adaptive thresholding for better feature capture
-        _, thresholded_image = cv2.threshold(enhanced_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        thresholded_image = exposure.rescale_intensity(enhanced_image)
         
         # Convert grayscale to RGB
-        rgb_image = cv2.cvtColor(thresholded_image, cv2.COLOR_GRAY2RGB)
+        rgb_image = color.gray2rgb(thresholded_image)
         
         # Expand dimensions to match model input shape
         return np.expand_dims(rgb_image, axis=0)
@@ -235,7 +254,7 @@ elif section == 'Prediction':
     meta_model = load_model("meta_model.h5")
     model1 = load_model("model1.h5")
     model2 = load_model("model2.h5")
-
+    
     # Get length and width values from the user
     aspect = st.number_input('Enter the aspect ration (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
 
@@ -249,16 +268,15 @@ elif section == 'Prediction':
         InitiateRange = '4'
         FinalRange = '100'
         
-    # Load the image
-    uploaded_image = st.file_uploader('Upload Image')
+    # File uploader
+    uploaded_image = st.file_uploader("Upload an image of the damaged concrete column", type=["jpg", "jpeg", "png"])
+
     if uploaded_image is not None:
         # Convert file uploader data to numpy array
-        file_bytes = np.asarray(bytearray(uploaded_image.read()), dtype=np.uint8)
-        # Decode image
-        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        image = np.array(Image.open(uploaded_image))
         
         # Preprocess the image
-        preprocessed_img = preprocess_image(img)
+        preprocessed_img = preprocess_image(image)
         
         # Make predictions using the loaded model
         predictions1 = model1.predict(preprocessed_img)
