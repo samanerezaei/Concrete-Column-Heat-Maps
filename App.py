@@ -253,9 +253,9 @@ elif section == 'Prediction':
     uploaded_image = st.file_uploader('Upload Image')
     if uploaded_image is not None:
         # Convert file uploader data to numpy array
-        #file_bytes = np.asarray(bytearray(uploaded_image.read()), dtype=np.uint8)
+        file_bytes = np.asarray(bytearray(uploaded_image.read()), dtype=np.uint8)
         # Decode image
-        img = Image.open(io.BytesIO(uploaded_image))
+        img = Image.open(io.BytesIO(file_bytes))
         
         # Preprocess the image
         preprocessed_img = preprocess_image(img)
