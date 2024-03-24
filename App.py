@@ -28,15 +28,15 @@ if section == 'Home':
     """, unsafe_allow_html=True)
 
     st.write("""
-    <p style='text-align: justify;'>This paper provides a probabilistic framework for quantifying the spatial distribution of cracking and crushing in rectangular reinforced concrete columns. 
-                                    The probabilistic spatial analysis is accomplished on a rectangular reinforced concrete columns database tested under quasi-static cyclic loading. The database 
-                                    includes 422 images of 109 damaged rectangular reinforced concrete columns with various geometry and material properties at different drift ratios between 0.2% and 6.0%. 
-                                    Damaged heat maps derived from the probabilistic spatial analysis show the concentration and severity of the damage by highlighting the column areas that are more prone 
-                                    to cracking and crushing. According to the three major categories for the aspect ratio of concrete columns, this study presented the damage heat maps in different ranges 
-                                    of drift ratios and strength-based damage index (DIs) for each category. In the following, a set of classification models are generated based on the aspect ratio, crack 
-                                    and crush indices of damaged rectangular reinforced concrete columns to predict the heat map level. The predicted heat map level shows the range of the drift ratio and 
-                                    strength-based damage index (DIs) that each concrete column experienced. The results of this study are a useful benchmark for the reconnaissance teams to accelerate the 
-                                    detection of the current status of the damaged concrete columns after an earthquake.</p>
+    <p style='text-align: justify;'>This paper provides a framework based on damage density heat maps to accelerate the post-earthquake assessment of rectangular reinforced concrete (RC) columns. 
+    The heat maps utilize image processing filters to analyze visual characteristics of damaged RC columns, such as cracks and crushing areas. This visual analysis is accomplished on a database 
+    of rectangular RC columns tested under quasi-static cyclic loading. The database includes 422 images of 109 damaged rectangular RC columns with various geometry (aspect ratios between 2 and 6.4) 
+    and material properties at drift ratios between 0.2% and 6.0%. According to the database, three major categories exist for the aspect ratios of the RC columns. The damage density heat maps are 
+    presented based on the ranges of the drift ratio and strength-based damage index (DIs) for each aspect ratio category. Indeed, the heat maps show the concentration and severity of the damage by 
+    highlighting the column areas that are more prone to cracking and crushing.  In the following, two classification models utilizing machine learning methods are developed to predict the heatmap 
+    level of damaged RC columns. The predicted heat map level determines the range of the experienced drift ratio and DIs (lost strength of the RC column) range. Finally, these models are made accessible 
+    through a user-friendly web application, where input parameters such as the aspect ratio and images of damaged RC columns can be used to generate predictions. The results of this study are a useful 
+    benchmark for the reconnaissance teams to accelerate the detection of the current status of the damaged concrete columns after an earthquake.</p>
     """, unsafe_allow_html=True)
 
     st.markdown('### Authors:')
