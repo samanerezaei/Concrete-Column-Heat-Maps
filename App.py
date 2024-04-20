@@ -184,27 +184,37 @@ elif section == 'Guidelines':
 
 
  
-elif section == 'Prediction':
-    # Function to preprocess the image for model input
-    def preprocess_image(image, target_size=(100, 100)):
-        # Resize image to target size
-        resized_image = image.resize(target_size)
-        
-        # Enhance contrast using PIL's ImageEnhance module
-        enhancer = ImageEnhance.Contrast(resized_image)
-        contrast_enhanced = enhancer.enhance(10.0)  # Adjust the enhancement factor as needed
-        
-        # Convert to grayscale
-        gray = contrast_enhanced.convert('L')
-        
-        # Apply adaptive thresholding for better feature capture
-        thresholded_image = gray.point(lambda p: p > 127 and 255)
-        
-        # Convert grayscale to RGB
-        rgb_image = thresholded_image.convert('RGB')
-        
-        # Expand dimensions to match model input shape
-        return np.expand_dims(np.array(rgb_image), axis=0)
+def preprocess_image(image, target_size=(100, 100)):
+    # Resize image to target size
+    resized_image = image.resize(target_size)
+
+    # Print debug information
+    print("Resized image size:", resized_image.size)
+
+    # Enhance contrast using PIL's ImageEnhance module
+    enhancer = ImageEnhance.Contrast(resized_image)
+
+    # Print debug information
+    print("Contrast enhancer object created")
+
+    # Apply enhancement
+    contrast_enhanced = enhancer.enhance(10.0)  # Adjust the enhancement factor as needed
+
+    # Print debug information
+    print("Contrast enhancement applied")
+
+    # Convert to grayscale
+    gray = contrast_enhanced.convert('L')
+
+    # Apply adaptive thresholding for better feature capture
+    thresholded_image = gray.point(lambda p: p > 127 and 255)
+
+    # Convert grayscale to RGB
+    rgb_image = thresholded_image.convert('RGB')
+
+    # Expand dimensions to match model input shape
+    return np.expand_dims(np.array(rgb_image), axis=0)
+
 
     TYPE = st.selectbox('Select the type of Heat Map', ["Based on Drift", "Based on DIS"])
 
