@@ -40,7 +40,6 @@ if section == 'Home':
     """, unsafe_allow_html=True)
 
     st.markdown('### Authors:')
-    # Define paths to social media icons
     
     ##### Email
     response_email = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
