@@ -10,6 +10,37 @@ import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
+def preprocess_image(image, target_size=(100, 100)):
+    # Resize image to target size
+    resized_image = image.resize(target_size)
+
+    # Print debug information
+    print("Resized image size:", resized_image.size)
+
+    # Enhance contrast using PIL's ImageEnhance module
+    enhancer = ImageEnhance.Contrast(resized_image)
+
+    # Print debug information
+    print("Contrast enhancer object created")
+
+    # Apply enhancement
+    contrast_enhanced = enhancer.enhance(10.0)  # Adjust the enhancement factor as needed
+
+    # Print debug information
+    print("Contrast enhancement applied")
+
+    # Convert to grayscale
+    gray = contrast_enhanced.convert('L')
+
+    # Apply adaptive thresholding for better feature capture
+    thresholded_image = gray.point(lambda p: p > 127 and 255)
+
+    # Convert grayscale to RGB
+    rgb_image = thresholded_image.convert('RGB')
+
+    # Expand dimensions to match model input shape
+    return np.expand_dims(np.array(rgb_image), axis=0)
+
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
     
 ## Visualization
@@ -181,40 +212,7 @@ elif section == 'Guidelines':
         <p style='text-align: justify;'> - Please ensure that all the aforementioned guidelines are followed accurately to accurately predict the class of heatmaps associated with the uploaded image. Adherence to these guidelines is crucial for effectively assessing damaged concrete columns post-earthquake and ensuring accurate results..</p>
         """, unsafe_allow_html=True)
 
-
- 
-def preprocess_image(image, target_size=(100, 100)):
-    # Resize image to target size
-    resized_image = image.resize(target_size)
-
-    # Print debug information
-    print("Resized image size:", resized_image.size)
-
-    # Enhance contrast using PIL's ImageEnhance module
-    enhancer = ImageEnhance.Contrast(resized_image)
-
-    # Print debug information
-    print("Contrast enhancer object created")
-
-    # Apply enhancement
-    contrast_enhanced = enhancer.enhance(10.0)  # Adjust the enhancement factor as needed
-
-    # Print debug information
-    print("Contrast enhancement applied")
-
-    # Convert to grayscale
-    gray = contrast_enhanced.convert('L')
-
-    # Apply adaptive thresholding for better feature capture
-    thresholded_image = gray.point(lambda p: p > 127 and 255)
-
-    # Convert grayscale to RGB
-    rgb_image = thresholded_image.convert('RGB')
-
-    # Expand dimensions to match model input shape
-    return np.expand_dims(np.array(rgb_image), axis=0)
-
-
+elif section == 'Prediction':
     TYPE = st.selectbox('Select the type of Heat Map', ["Based on Drift", "Based on DIS"])
 
     # Load the model
