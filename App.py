@@ -10,36 +10,22 @@ import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-def preprocess_image(image, target_size=(100, 100)):
-    # Resize image to target size
+def preprocess_image(image, target_size=(224, 224)):
+    # Resize image to target size (same as used for training models)
     resized_image = image.resize(target_size)
-
-    # Print debug information
-    print("Resized image size:", resized_image.size)
 
     # Enhance contrast using PIL's ImageEnhance module
     enhancer = ImageEnhance.Contrast(resized_image)
+    contrast_enhanced = enhancer.enhance(2.0)  # Adjust contrast enhancement factor as needed
 
-    # Print debug information
-    print("Contrast enhancer object created")
+    # Convert image to RGB (if it's not already in RGB format)
+    rgb_image = contrast_enhanced.convert('RGB')
 
-    # Apply enhancement
-    contrast_enhanced = enhancer.enhance(10.0)  # Adjust the enhancement factor as needed
+    # Normalize image to match the input format used during training
+    normalized_image = np.array(rgb_image) / 255.0
 
-    # Print debug information
-    print("Contrast enhancement applied")
-
-    # Convert to grayscale
-    gray = contrast_enhanced.convert('L')
-
-    # Apply adaptive thresholding for better feature capture
-    thresholded_image = gray.point(lambda p: p > 127 and 255)
-
-    # Convert grayscale to RGB
-    rgb_image = thresholded_image.convert('RGB')
-
-    # Expand dimensions to match model input shape
-    return np.expand_dims(np.array(rgb_image), axis=0)
+    # Expand dimensions to match model input shape (batch_size, height, width, channels)
+    return np.expand_dims(normalized_image, axis=0)
 
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
     
@@ -53,164 +39,8 @@ if section == 'Home':
     <p style='text-align: justify;'>This application is designed to accelerate post-earthquake assessment. The predicted class of the heatmaps provides insight into the experienced drift 
                                     and lost strength of the concrete column. The predictions are based on an ensemble of machine learning models based on classification algorithms, as 
                                     detailed in our research paper 'Damage density heat maps of rectangular reinforced concrete columns.'
-
-
 </p>
     """, unsafe_allow_html=True)
-
-    st.write("""
-    <p style='text-align: justify;'>This paper provides a framework based on damage density heat maps to accelerate the post-earthquake assessment of rectangular reinforced concrete (RC) columns. 
-    The heat maps utilize image processing filters to analyze visual characteristics of damaged RC columns, such as cracks and crushing areas. This visual analysis is accomplished on a database 
-    of rectangular RC columns tested under quasi-static cyclic loading. The database includes 422 images of 109 damaged rectangular RC columns with various geometry (aspect ratios between 2 and 6.4) 
-    and material properties at drift ratios between 0.2% and 6.0%. According to the database, three major categories exist for the aspect ratios of the RC columns. The damage density heat maps are 
-    presented based on the ranges of the drift ratio and strength-based damage index (DIs) for each aspect ratio category. Indeed, the heat maps show the concentration and severity of the damage by 
-    highlighting the column areas that are more prone to cracking and crushing.  In the following, two classification models utilizing machine learning methods are developed to predict the heatmap 
-    level of damaged RC columns. The predicted heat map level determines the range of the experienced drift ratio and DIs (lost strength of the RC column) range. Finally, these models are made accessible 
-    through a user-friendly web application, where input parameters such as the aspect ratio and images of damaged RC columns can be used to generate predictions. The results of this study are a useful 
-    benchmark for the reconnaissance teams to accelerate the detection of the current status of the damaged concrete columns after an earthquake.</p>
-    """, unsafe_allow_html=True)
-
-    st.markdown('### Authors:')
-    
-    ##### Email
-    response_email = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
-    image_bytes_email = io.BytesIO(response_email.content)
-    email_icon = Image.open(image_bytes_email)
-    email_icon_resized = email_icon.resize((30, 30))
-    
-    ###### Linkedin
-    response_linkedin = requests.get("https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png")
-    image_bytes_linkedin = io.BytesIO(response_linkedin.content)
-    linkedin_icon = Image.open(image_bytes_linkedin)
-    linkedin_icon_resized = linkedin_icon.resize((30, 30))
-        
-    # Create columns to display images and information for the first row
-    col1, col2, col3 = st.columns([1, 0.1, 1])
-
-    # Load and display the images using PIL for the first row
-    with col1:
-        # Fetch the image from the URL
-        image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Mohammadjavad%20Hamidia.jpg?raw=true"
-        response = requests.get(image_url)
-
-        # Open the image using PIL
-        person1_image = Image.open(io.BytesIO(response.content))
-        st.image(person1_image, use_column_width=True)
-        st.header("Mohammadjavad Hamidia")
-        st.markdown("### Assistant Professor")
-        st.write("Department of Civil, Water and Environmental Engineering at Shahid Beheshti University")
-        
-        ############################### Email
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(email_icon_resized)
-        col2.write("[Email](mailto:m_hamidia@sbu.ac.ir)")
-
-        ############################### LinkedIn
-        # Fetch the image from the URL
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(linkedin_icon_resized)
-        col2.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
-
-    with col3:
-        # Fetch the image from the URL
-        image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Samane%20Rezaei.jpg?raw=true"
-        response = requests.get(image_url)
-
-        # Open the image using PIL
-        person2_image = Image.open(io.BytesIO(response.content))
-        st.image(person2_image, use_column_width=True)
-        st.header("Samane Rezaei")
-        st.markdown("### Ph.D. Student in Structural Engineering")
-        st.write("Department of Civil Engineering at Sharif University of Technology")
-
-        ############################### Email
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(email_icon_resized)
-        col2.write("[Email](samane.rezaei@sharif.edu)")
-
-        ############################### LinkedIn
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(linkedin_icon_resized)
-        col2.write("[LinkedIn](https://www.linkedin.com/in/samane-rezaei-3999a5212)")
-
-    # Create columns to display the image and information for the second row
-    col4, col5, col6 = st.columns([1, 0.1, 1])
-
-    with col4:
-        # Fetch the image from the URL
-        image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Kiarash%20Dolatshahi.jpeg?raw=true"
-        response = requests.get(image_url)
-
-        # Open the image using PIL
-        person3_image = Image.open(io.BytesIO(response.content))
-
-        # Display the image
-        st.image(person3_image, use_column_width=True)
-        st.header("Kiarash M.Dolatshahi")
-        st.markdown("### Assistant Professor")
-        st.write("Department of Civil Engineering at Sharif University of Technology")
-
-        ############################### Email
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(email_icon_resized)
-        col2.write("[Email](dolatshahi@sharif.edu)")
-
-        ############################### LinkedIn
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(linkedin_icon_resized)
-        col2.write("[LinkedIn](https://www.linkedin.com/in/kiarash-dolatshahi-0a20aba0)")
-
-elif section == 'Guidelines':  
-
-    st.markdown('### For using prediction models:')
-    st.markdown('### Choose the type of heatmap')
-    st.write("""
-        <p style='text-align: justify;'>- This application is defined based on damage heat maps in different ranges of drift ratios and strength-based damage index (DIs) for three aspect ratio classes. For each type of heatmap, a classification model is provided that can be used to accelerate post-earthquake assessment. In this section, the user must choose the type of the heatmap (based on Drift, or DIS). </p>
-        """, unsafe_allow_html=True)
-
-    st.markdown('### Uploading Images')
-    #st.write('- Click on the "Upload Images" button on the homepage.')
-    st.write('- Select the images of the damaged concrete columns from your device.')
-    st.write('- Ensure that the images are clear and show the damages accurately.')
-
-    st.markdown('### Inputting Aspect Ratio Values')
-    st.write('- Measure the dimensions of the concrete column (width, height, etc.).')
-    st.write('- Calculate the aspect ratio value that is equal to dividing height by width.')
-    st.write('- Input the aspect ratio value into the corresponding field on the application.')
-
-    st.markdown('### Prediction')
-    st.write('- Click on the "Predict" button to initiate the prediction process.')
-    st.write('- Wait for the prediction models to process the inputs and generate results.')
-
-    st.markdown('### Reviewing Results')
-    st.write('- Once the assessment is complete, the results will be displayed on the screen.')
-    st.write("""
-        <p style='text-align: justify;'>- Related to the predicted class number of the heatmap, the range of the experienced drift or Lost resistance (based on the heatmap type) is determined, and the digitized image of the damaged concrete column (the image that shows the damaged zone of the column) will be shown as results. </p>
-        """, unsafe_allow_html=True)
-
-
-    st.markdown('### Additional Tips')
-    st.write("""
-        <p style='text-align: justify;'> - Ensure that the images provided are of high quality and clearly show the damages to get accurate predictions.</p>
-        """, unsafe_allow_html=True)
-             
-    st.write("""
-        <p style='text-align: justify;'> - Double-check the aspect ratio value inputted to ensure accuracy in the assessment.</p>
-        """, unsafe_allow_html=True)
-
-    st.write("""
-        <p style='text-align: justify;'> - By following this guideline, you can effectively utilize the Post-Earthquake Concrete Column Assessment Tool to assess damaged concrete columns with confidence and make informed decisions regarding their condition and safety in post-earthquake scenarios. </p>
-        """, unsafe_allow_html=True)
-
-    st.write("""
-        <p style='text-align: justify;'> - Please ensure that all the aforementioned guidelines are followed accurately to accurately predict the class of heatmaps associated with the uploaded image. Adherence to these guidelines is crucial for effectively assessing damaged concrete columns post-earthquake and ensuring accurate results..</p>
-        """, unsafe_allow_html=True)
 
 elif section == 'Prediction':
     TYPE = st.selectbox('Select the type of Heat Map', ["Based on Drift", "Based on DIS"])
@@ -219,14 +49,14 @@ elif section == 'Prediction':
     # Define model links based on the selected type
     if TYPE == "Based on Drift":
         EDP = 'Drift'
-        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/meta_model.h5"
-        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/model1.h5"
-        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20Drift%20classification/model2.h5"
+        meta_model_link = "E:\sharif\Papers\Heat map\Python Code\Drift\Selected Classification\meta_best_model_20241115_004034.keras"
+        model1_link = "E:\sharif\Papers\Heat map\Python Code\Drift\Selected Classification\best_model_1_20241114_223909.keras"
+        model2_link = "E:\sharif\Papers\Heat map\Python Code\Drift\Selected Classification\final_base_model_2.h5"
     elif TYPE == "Based on DIS":
         EDP = 'DIS'
-        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/meta_model.h5"
-        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/model1.h5"
-        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/raw/main/Models%20of%20DIS%20classification/model2.h5"
+        meta_model_link = "E:\sharif\Papers\Heat map\Python Code\DIS\Classification 2\meta_best_model.h5"
+        model1_link = "E:\sharif\Papers\Heat map\Python Code\DIS\Classification 2\final_base_model_1.h5"
+        model2_link = "E:\sharif\Papers\Heat map\Python Code\DIS\Classification 2\final_base_model_2.h5"
 
     # Download the meta-model file
     response_meta_model = requests.get(meta_model_link)
@@ -247,8 +77,9 @@ elif section == 'Prediction':
     model2 = load_model("model2.h5")
 
     # Get length and width values from the user
-    aspect = st.number_input('Enter the aspect ration (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
+    aspect = st.number_input('Enter the aspect ratio (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
 
+    # Define aspect ratio categories based on user input
     if aspect <= 2:
         InitiateRange = '0'
         FinalRange = '2'
@@ -277,20 +108,20 @@ elif section == 'Prediction':
         predicted_label = np.argmax(meta_model.predict(stacking_features), axis=1)
         predicted_class = predicted_label[0] + 1
 
-        # Load the model
+        # Determine the predicted range based on the selected type
         if TYPE == "Based on Drift":
             if predicted_class == 1:
-                Range = '0.0 t0 0.5'
+                Range = '0.0 to 0.5'
             elif predicted_class == 2:
-                Range = '0.5 t0 1.0'
+                Range = '0.5 to 1.0'
             elif predicted_class == 3:
-                Range = '1.0 t0 1.5'
+                Range = '1.0 to 1.5'
             elif predicted_class == 4:
-                Range = '1.5 t0 2.0'
+                Range = '1.5 to 2.0'
             elif predicted_class == 5:
-                Range = '2.0 t0 2.5'
+                Range = '2.0 to 2.5'
             elif predicted_class == 6:
-                Range = '2.5 t0 3.0'
+                Range = '2.5 to 3.0'
             elif predicted_class == 7:
                 Range = 'more than 3.0'
             
@@ -315,7 +146,7 @@ elif section == 'Prediction':
         my_bar = st.progress(0)
         
         for percent_complete in range(100):
-            time.sleep(0.1)
+            time.sleep(0.01)
             my_bar.progress(percent_complete + 1)
             
         # Display the predicted class with increased font size
@@ -335,12 +166,12 @@ elif section == 'Prediction':
         crack_image = Image.open(io.BytesIO(response_crack.content))
         crushing_image = Image.open(io.BytesIO(response_crushing.content))
         original_image = Image.open(uploaded_image)
-        crack_resized = crack_image.resize((100, (int(aspect))*100))
-        crushing_resized = crushing_image.resize((100, (int(aspect))*100))
-        original_image_resized = original_image.resize((100, (int(aspect))*100))
+        crack_resized = crack_image.resize((224, int(aspect) * 224))
+        crushing_resized = crushing_image.resize((224, int(aspect) * 224))
+        original_image_resized = original_image.resize((224, int(aspect) * 224))
         
         # Display the images with captions and increased font size
         col1.image(original_image_resized, caption='Original Image', use_column_width=True)
-        col2.image(cv2.resize(preprocessed_img.squeeze(), (100, (int(aspect))*100)), caption='Digitized Image',use_column_width=True)
-        col3.image(crack_resized, caption='Critical zones for Cracking Damege', use_column_width=True)
+        col2.image(cv2.resize(preprocessed_img.squeeze(), (224, int(aspect) * 224)), caption='Digitized Image', use_column_width=True)
+        col3.image(crack_resized, caption='Critical zones for Cracking Damage', use_column_width=True)
         col4.image(crushing_resized, caption='Critical zones for Crushing Damage', use_column_width=True)
