@@ -1,10 +1,8 @@
-Streamlit==1.12.0
+streamlit==1.12.0
 opencv-python-headless==4.5.5.64
-Pillow==8.2.0
-numpy==1.23.5
-protobuf==3.19.6
+pillow==8.2.0
+numpy==1.22.4
 tensorflow==2.10.1
 tensorflow-gpu==2.10.1
-requests==2.32.3
-setuptools>=58.0.0
-tensorflow-model-optimization==0.8.0
+setuptools>=75.0
+
