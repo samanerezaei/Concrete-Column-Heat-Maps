@@ -310,15 +310,15 @@ elif section == 'Prediction':
     # Load the models ONCE
     if TYPE == "Based on Drift":
         EDP = 'Drift'
-        meta_model_link = "https://github.com/samanerezaei/Concrete-Column/blob/main/Models%20of%20Drift%20classification/meta_model.h5https://github.com/samanerezaei/Concrete-Column/blob/main/Models%20of%20Drift%20classification/meta_model.h5"
-        model1_link = "https://github.com/samanerezaei/Concrete-Column/blob/main/Models%20of%20Drift%20classification/model1.h5"
-        model2_link = "https://github.com/samanerezaei/Concrete-Column/blob/main/Models%20of%20Drift%20classification/model2.h5"
+        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/meta_model.h5"
+        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/model1.h5"
+        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/model2.h5"
         
     elif TYPE == "Based on DIS":
         EDP = 'DIS'
-        meta_model_link = "https://github.com/samanerezaei/Concrete-Column/blob/main/Models%20of%20DIS%20classification/meta_model.h5"
-        model1_link = "https://github.com/samanerezaei/Concrete-Column/blob/main/Models%20of%20DIS%20classification/model1.h5"
-        model2_link = "https://github.com/samanerezaei/Concrete-Column/blob/main/Models%20of%20DIS%20classification/model2.h5"
+        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/meta_model.h5"
+        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/model1.h5"
+        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/model2.h5"
     
     #st.write("Loading models... Please wait.")
     meta_model, model1, model2 = load_models(model1_link, model2_link, meta_model_link)
