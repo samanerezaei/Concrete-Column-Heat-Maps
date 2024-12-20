@@ -9,27 +9,31 @@ import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-@st.cache  # Use @st.cache instead of @st.cache_resource
+@st.cache
 def load_models(model1_link, model2_link, meta_model_link):
-    """
-    Download and load models. Cached to prevent repeated downloads.
-    """
-    # Download and save model files temporarily
-    response_meta_model = requests.get(meta_model_link)
-    response_model1 = requests.get(model1_link)
-    response_model2 = requests.get(model2_link)
+    try:
+        # Download and save model files temporarily
+        response_meta_model = requests.get(meta_model_link, stream=True)
+        response_model1 = requests.get(model1_link, stream=True)
+        response_model2 = requests.get(model2_link, stream=True)
 
-    with open("meta_model.h5", "wb") as f:
-        f.write(response_meta_model.content)
-    with open("model1.h5", "wb") as f:
-        f.write(response_model1.content)
-    with open("model2.h5", "wb") as f:
-        f.write(response_model2.content)
-    # Load the models
-    meta_model = load_model("meta_model.h5")
-    model1 = load_model("model1.h5")
-    model2 = load_model("model2.h5")
-    return meta_model, model1, model2
+        with open("meta_model.h5", "wb") as f:
+            f.write(response_meta_model.content)
+        with open("model1.h5", "wb") as f:
+            f.write(response_model1.content)
+        with open("model2.h5", "wb") as f:
+            f.write(response_model2.content)
+
+        # Load the models
+        meta_model = load_model("meta_model.h5")
+        model1 = load_model("model1.h5")
+        model2 = load_model("model2.h5")
+        return meta_model, model1, model2
+
+    except Exception as e:
+        st.error(f"An error occurred while loading the models: {e}")
+        raise
+
 
 # Preprocessing function
 import cv2
