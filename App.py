@@ -170,17 +170,12 @@ if section == 'Home':
         st.write("Department of Civil, Water and Environmental Engineering at Shahid Beheshti University")
         
         ############################### Email
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([1, 5])
-        col1.image(email_icon_resized)
-        col2.write("[Email](mailto:m_hamidia@sbu.ac.ir)")
-
-        ############################### LinkedIn
-        # Fetch the image from the URL
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([1, 5])
-        col1.image(linkedin_icon_resized)
-        col2.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
+        # Display Email and LinkedIn inline
+        st.image(email_icon_resized, width=30)
+        st.markdown("[Email](mailto:m_hamidia@sbu.ac.ir)", unsafe_allow_html=True)
+        
+        st.image(linkedin_icon_resized, width=30)
+        st.markdown("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)", unsafe_allow_html=True)
 
     with col3:
         # Fetch the image from the URL
