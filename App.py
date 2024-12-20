@@ -355,7 +355,6 @@ elif section == 'Prediction':
         FinalRange = '100'
         
     # Load the image
-    # Process the uploaded image
     uploaded_image = st.file_uploader('Upload an image of a damaged RC column', type=['jpg', 'jpeg', 'png'])
     if uploaded_image is not None:
         # Load and display the original image
