@@ -9,7 +9,7 @@ import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-@st.cache_resource  # Caches the models globally for the session
+@st.cache  # Use @st.cache instead of @st.cache_resource
 def load_models(model1_link, model2_link, meta_model_link):
     """
     Download and load models. Cached to prevent repeated downloads.
