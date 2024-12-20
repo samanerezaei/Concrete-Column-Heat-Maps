@@ -161,26 +161,20 @@ if section == 'Home':
         # Fetch the image from the URL
         image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Mohammadjavad%20Hamidia.jpg?raw=true"
         response = requests.get(image_url)
-
+    
         # Open the image using PIL
         person1_image = Image.open(io.BytesIO(response.content))
         st.image(person1_image, use_column_width=True)
         st.header("Mohammadjavad Hamidia")
         st.markdown("### Assistant Professor")
         st.write("Department of Civil, Water and Environmental Engineering at Shahid Beheshti University")
-        
-        ############################### Email
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(email_icon_resized)
-        col2.write("[Email](mailto:m_hamidia@sbu.ac.ir)")
-
-        ############################### LinkedIn
-        # Fetch the image from the URL
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(linkedin_icon_resized)
-        col2.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
+    
+        # Display Email and LinkedIn inline
+        st.image(email_icon_resized, width=30)
+        st.markdown("[Email](mailto:m_hamidia@sbu.ac.ir)", unsafe_allow_html=True)
+    
+        st.image(linkedin_icon_resized, width=30)
+        st.markdown("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)", unsafe_allow_html=True)
 
     with col3:
         # Fetch the image from the URL
