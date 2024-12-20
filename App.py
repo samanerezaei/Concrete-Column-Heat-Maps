@@ -171,18 +171,16 @@ if section == 'Home':
         
         ############################### Email
         # Display the email icon with defined width and height
-        with st.container():
-            col1, col2 = st.columns([0.2, 1])
-            col1.image(email_icon_resized)
-            col2.write("[Email](mailto:m_hamidia@sbu.ac.ir)")
+        col1, col2 = st.columns([1, 5])
+        col1.image(email_icon_resized)
+        col2.write("[Email](mailto:m_hamidia@sbu.ac.ir)")
 
         ############################### LinkedIn
         # Fetch the image from the URL
         # Display the email icon with defined width and height
-        with st.container():
-            col1, col2 = st.columns([0.2, 1])
-            col1.image(linkedin_icon_resized)
-            col2.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
+        col1, col2 = st.columns([1, 5])
+        col1.image(linkedin_icon_resized)
+        col2.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
 
     with col3:
         # Fetch the image from the URL
@@ -198,17 +196,15 @@ if section == 'Home':
 
         ############################### Email
         # Display the email icon with defined width and height
-        with st.container():
-            col1, col2 = st.columns([0.2, 1])
-            col1.image(email_icon_resized)
-            col2.write("[Email](samane.rezaei@sharif.edu)")
+        col1, col2 = st.columns([0.2, 1])
+        col1.image(email_icon_resized)
+        col2.write("[Email](samane.rezaei@sharif.edu)")
 
         ############################### LinkedIn
         # Display the email icon with defined width and height
-        with st.container():
-            col1, col2 = st.columns([0.2, 1])
-            col1.image(linkedin_icon_resized)
-            col2.write("[LinkedIn](https://www.linkedin.com/in/samane-rezaei-3999a5212)")
+        col1, col2 = st.columns([0.2, 1])
+        col1.image(linkedin_icon_resized)
+        col2.write("[LinkedIn](https://www.linkedin.com/in/samane-rezaei-3999a5212)")
 
     # Create columns to display the image and information for the second row
     col4, col5, col6 = st.columns([1, 0.1, 1])
@@ -229,17 +225,15 @@ if section == 'Home':
 
         ############################### Email
         # Display the email icon with defined width and height
-        with st.container():
-            col1, col2 = st.columns([0.2, 1])
-            col1.image(email_icon_resized)
-            col2.write("[Email](dolatshahi@sharif.edu)")
+        col1, col2 = st.columns([0.2, 1])
+        col1.image(email_icon_resized)
+        col2.write("[Email](dolatshahi@sharif.edu)")
 
         ############################### LinkedIn
         # Display the email icon with defined width and height
-        with st.container():
-            col1, col2 = st.columns([0.2, 1])
-            col1.image(linkedin_icon_resized)
-            col2.write("[LinkedIn](https://www.linkedin.com/in/kiarash-dolatshahi-0a20aba0)")
+        col1, col2 = st.columns([0.2, 1])
+        col1.image(linkedin_icon_resized)
+        col2.write("[LinkedIn](https://www.linkedin.com/in/kiarash-dolatshahi-0a20aba0)")
         
 
     with col6:
@@ -258,17 +252,15 @@ if section == 'Home':
 
         ############################### Email
         # Display the email icon with defined width and height
-        with st.container():
-            col1, col2 = st.columns([0.2, 1])
-            col1.image(email_icon_resized)
-            col2.write("[Email](amir.asjodi74@gmail.com)")
+        col1, col2 = st.columns([0.2, 1])
+        col1.image(email_icon_resized)
+        col2.write("[Email](amir.asjodi74@gmail.com)")
 
         ############################### LinkedIn
         # Display the email icon with defined width and height
-        with st.container():
-            col1, col2 = st.columns([0.2, 1])
-            col1.image(linkedin_icon_resized)
-            col2.write("[LinkedIn](https://www.linkedin.com/in/amir-hossein-asjodi/)")
+        col1, col2 = st.columns([0.2, 1])
+        col1.image(linkedin_icon_resized)
+        col2.write("[LinkedIn](https://www.linkedin.com/in/amir-hossein-asjodi/)")
         
 elif section == 'Guidelines':  
 
