@@ -171,17 +171,23 @@ if section == 'Home':
         
         ############################### Email
         # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(email_icon_resized)
-        col2.write("[Email](mailto:m_hamidia@sbu.ac.ir)")
-
+        #col1, col2 = st.columns([0.2, 1])
+        #col1.image(email_icon_resized)
+        #col2.write("[Email](mailto:m_hamidia@sbu.ac.ir)")
+        
+        st.image(email_icon_resized, width=30)
+        st.write("[Email](mailto:m_hamidia@sbu.ac.ir)")
+    
         ############################### LinkedIn
         # Fetch the image from the URL
         # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(linkedin_icon_resized)
-        col2.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
-
+        #col1, col2 = st.columns([0.2, 1])
+        #col1.image(linkedin_icon_resized)
+        #col2.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
+        
+        st.image(linkedin_icon_resized, width=30)
+        st.write("[LinkedIn](https://www.linkedin.com/in/mohammadjavadhamidia)")
+        
     with col3:
         # Fetch the image from the URL
         image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Samane%20Rezaei.jpg?raw=true"
