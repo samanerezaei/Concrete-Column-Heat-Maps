@@ -168,12 +168,11 @@ if section == 'Home':
         }
     ]
     
-    # Create two columns
+    # First row: Images + Name + Title
     col1, col2 = st.columns(2)
     
-    # Display person details
     for idx, author in enumerate(authors):
-        with [col1, col2][idx]:  # Assign each person to col1 or col2
+        with [col1, col2][idx]:  
             response = requests.get(author["image_url"])
             person_image = Image.open(io.BytesIO(response.content))
             
@@ -182,18 +181,23 @@ if section == 'Home':
             st.markdown(f"### {author['title']}")
             st.write(author["affiliation"])
     
-    # Create another row for email & LinkedIn (Avoiding nested columns)
+    # Second row: Email & LinkedIn (Separate Columns Below Each Person)
     col1, col2 = st.columns(2)
     
     for idx, author in enumerate(authors):
         with [col1, col2][idx]:  
-            col_email, col_linkedin = st.columns([1, 1])  # Each column gets equal width
-            with col_email:
-                st.image(email_icon, width=25)
-                st.write(f"[Email]({author['email']})")
-            with col_linkedin:
-                st.image(linkedin_icon, width=25)
-                st.write(f"[LinkedIn]({author['linkedin']})")
+            st.markdown(
+                f"""
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="https://cdn-icons-png.freepik.com/256/552/552486.png" width="25">
+                    <a href="{author['email']}">Email</a>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                    <img src="https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png" width="25">
+                    <a href="{author['linkedin']}">LinkedIn</a>
+                </div>
+                """, unsafe_allow_html=True
+            )
 
     # Create columns to display the image and information for the second row
     col4, col5, col6 = st.columns([1, 0.1, 1])
