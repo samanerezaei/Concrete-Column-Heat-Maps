@@ -9,30 +9,26 @@ import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
+# Load models function - Cached
 @st.cache
 def load_models(model1_link, model2_link, meta_model_link):
-    try:
-        # Download and save model files temporarily
-        response_meta_model = requests.get(meta_model_link, stream=True)
-        response_model1 = requests.get(model1_link, stream=True)
-        response_model2 = requests.get(model2_link, stream=True)
+    # Download and save model files temporarily
+    response_meta_model = requests.get(meta_model_link, stream=True)
+    response_model1 = requests.get(model1_link, stream=True)
+    response_model2 = requests.get(model2_link, stream=True)
 
-        with open("meta_model.h5", "wb") as f:
-            f.write(response_meta_model.content)
-        with open("model1.h5", "wb") as f:
-            f.write(response_model1.content)
-        with open("model2.h5", "wb") as f:
-            f.write(response_model2.content)
+    with open("meta_model.h5", "wb") as f:
+        f.write(response_meta_model.content)
+    with open("model1.h5", "wb") as f:
+        f.write(response_model1.content)
+    with open("model2.h5", "wb") as f:
+        f.write(response_model2.content)
 
-        # Load the models
-        meta_model = load_model("meta_model.h5")
-        model1 = load_model("model1.h5")
-        model2 = load_model("model2.h5")
-        return meta_model, model1, model2
-
-    except Exception as e:
-        st.error(f"An error occurred while loading the models: {e}")
-        raise
+    # Load the models
+    meta_model = load_model("meta_model.h5")
+    model1 = load_model("model1.h5")
+    model2 = load_model("model2.h5")
+    return meta_model, model1, model2
 
 def enhance_image_contrast(image):
     """ Apply CLAHE for local contrast enhancement """
@@ -274,12 +270,12 @@ elif section == 'Prediction':
         model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/tree/main/Models%20of%20DIS%20classification/model1.h5"
         model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/tree/main/Models%20of%20DIS%20classification/model2.h5"
 
-    # Load models
+    # Error handling outside the cached function
     try:
         meta_model, model1, model2 = load_models(model1_link, model2_link, meta_model_link)
     except Exception as e:
-        st.error(f"Error loading models: {e}")
-        st.stop()
+        st.error(f"An error occurred while loading the models: {e}")
+        st.stop()  # Stop further execution if models cannot be loaded
 
     # Get aspect ratio input from user
     aspect = st.number_input('Enter the aspect ratio (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
