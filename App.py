@@ -140,7 +140,7 @@ if section == 'Home':
     """, unsafe_allow_html=True)
 
     st.markdown('### Authors:')
-
+    
     # Fetch icons
     response_email = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
     email_icon = Image.open(io.BytesIO(response_email.content)).resize((25, 25))
@@ -165,96 +165,57 @@ if section == 'Home':
             "image_url": "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Samane%20Rezaei.jpg?raw=true",
             "email": "mailto:samane.rezaei@sharif.edu",
             "linkedin": "https://www.linkedin.com/in/samane-rezaei-3999a5212"
+        },
+        {
+            "name": "Kiarash M.Dolatshahi",
+            "title": "Professor",
+            "affiliation": "Department of Civil Engineering at Sharif University of Technology",
+            "image_url": "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Kiarash%20Dolatshahi.jpeg?raw=true",
+            "email": "mailto:dolatshahi@sharif.edu",
+            "linkedin": "https://www.linkedin.com/in/kiarash-dolatshahi-0a20aba0"
+        },
+        {
+            "name": "Amir Hossein Asjodi",
+            "title": "Assistant Professor",
+            "affiliation": "Department of Civil Engineering at K.N. Toosi University of Technology",
+            "image_url": "https://raw.githubusercontent.com/samanerezaei/Concrete-Column-Heat-Maps/refs/heads/main/Images/Asjodi.jpg",
+            "email": "mailto:amir.asjodi74@gmail.com",
+            "linkedin": "https://www.linkedin.com/in/amir-hossein-asjodi/"
         }
     ]
     
-    # First row: Images + Name + Title
-    col1, col2 = st.columns(2)
+    # Display authors in two rows, each containing two columns
+    for row in range(0, len(authors), 2):
+        col1, col2 = st.columns(2)
     
-    for idx, author in enumerate(authors):
-        with [col1, col2][idx]:  
-            response = requests.get(author["image_url"])
-            person_image = Image.open(io.BytesIO(response.content))
-            
-            st.image(person_image, use_column_width=True)
-            st.header(author["name"])
-            st.markdown(f"### {author['title']}")
-            st.write(author["affiliation"])
+        for idx, col in enumerate([col1, col2]):
+            if row + idx < len(authors):
+                author = authors[row + idx]
     
-    # Second row: Email & LinkedIn (Single Row per Person)
-    col1, col2 = st.columns(2)
+                # Fetch and display image
+                response = requests.get(author["image_url"])
+                person_image = Image.open(io.BytesIO(response.content))
     
-    for idx, author in enumerate(authors):
-        with [col1, col2][idx]:  
-            st.markdown(
-                f"""
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <a href="{author['email']}" style="text-decoration: none;">
-                        <img src="https://cdn-icons-png.freepik.com/256/552/552486.png" width="25"> Email
-                    </a>
-                    <a href="{author['linkedin']}" style="text-decoration: none;">
-                        <img src="https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png" width="25"> LinkedIn
-                    </a>
-                </div>
-                """, unsafe_allow_html=True
-            )
+                with col:
+                    st.image(person_image, use_column_width=True)
+                    st.header(author["name"])
+                    st.markdown(f"### {author['title']}")
+                    st.write(author["affiliation"])
+    
+                    # Email & LinkedIn in the same row
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <a href="{author['email']}" style="text-decoration: none;">
+                                <img src="https://cdn-icons-png.freepik.com/256/552/552486.png" width="25"> Email
+                            </a>
+                            <a href="{author['linkedin']}" style="text-decoration: none;">
+                                <img src="https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png" width="25"> LinkedIn
+                            </a>
+                        </div>
+                        """, unsafe_allow_html=True
+                    )
 
-
-    # Create columns to display the image and information for the second row
-    col4, col5, col6 = st.columns([1, 0.1, 1])
-
-    with col4:
-        # Fetch the image from the URL
-        image_url = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Kiarash%20Dolatshahi.jpeg?raw=true"
-        response = requests.get(image_url)
-
-        # Open the image using PIL
-        person3_image = Image.open(io.BytesIO(response.content))
-
-        # Display the image
-        st.image(person3_image, use_column_width=True)
-        st.header("Kiarash M.Dolatshahi")
-        st.markdown("### Professor")
-        st.write("Department of Civil Engineering at Sharif University of Technology")
-
-        ############################### Email
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(email_icon_resized)
-        col2.write("[Email](dolatshahi@sharif.edu)")
-
-        ############################### LinkedIn
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(linkedin_icon_resized)
-        col2.write("[LinkedIn](https://www.linkedin.com/in/kiarash-dolatshahi-0a20aba0)")
-        
-
-    with col6:
-        # Fetch the image from the URL
-        image_url = "https://raw.githubusercontent.com/samanerezaei/Concrete-Column-Heat-Maps/refs/heads/main/Images/Asjodi.jpg"
-        response = requests.get(image_url)
-
-        # Open the image using PIL
-        person4_image = Image.open(io.BytesIO(response.content))
-
-        # Display the image
-        st.image(person4_image, use_column_width=True)
-        st.header("Amir Hossein Asjodi")
-        st.markdown("### Assistant Professor")
-        st.write("Department of Civil Engineering at K.N. Toosi University of Technology")
-
-        ############################### Email
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(email_icon_resized)
-        col2.write("[Email](amir.asjodi74@gmail.com)")
-
-        ############################### LinkedIn
-        # Display the email icon with defined width and height
-        col1, col2 = st.columns([0.2, 1])
-        col1.image(linkedin_icon_resized)
-        col2.write("[LinkedIn](https://www.linkedin.com/in/amir-hossein-asjodi/)")
         
 elif section == 'Guidelines':  
 
