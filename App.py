@@ -141,59 +141,59 @@ if section == 'Home':
 
     st.markdown('### Authors:')
 
-# Fetch icons
-response_email = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
-email_icon = Image.open(io.BytesIO(response_email.content)).resize((30, 30))
-
-response_linkedin = requests.get("https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png")
-linkedin_icon = Image.open(io.BytesIO(response_linkedin.content)).resize((30, 30))
-
-# Authors' data
-authors = [
-    {
-        "name": "Mohammadjavad Hamidia",
-        "title": "Assistant Professor",
-        "affiliation": "Department of Civil, Water and Environmental Engineering at Shahid Beheshti University",
-        "image_url": "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Mohammadjavad%20Hamidia.jpg?raw=true",
-        "email": "mailto:m_hamidia@sbu.ac.ir",
-        "linkedin": "https://www.linkedin.com/in/mohammadjavadhamidia"
-    },
-    {
-        "name": "Samane Rezaei",
-        "title": "Ph.D. Student in Structural Engineering",
-        "affiliation": "Department of Civil Engineering at Sharif University of Technology",
-        "image_url": "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Samane%20Rezaei.jpg?raw=true",
-        "email": "mailto:samane.rezaei@sharif.edu",
-        "linkedin": "https://www.linkedin.com/in/samane-rezaei-3999a5212"
-    }
-]
-
-# Create two columns
-col1, col2 = st.columns(2)
-
-# Display person details
-for idx, author in enumerate(authors):
-    with [col1, col2][idx]:  # Assign each person to col1 or col2
-        response = requests.get(author["image_url"])
-        person_image = Image.open(io.BytesIO(response.content))
-        
-        st.image(person_image, use_column_width=True)
-        st.header(author["name"])
-        st.markdown(f"### {author['title']}")
-        st.write(author["affiliation"])
-
-# Create another row for email & LinkedIn (Avoiding nested columns)
-col1, col2 = st.columns(2)
-
-for idx, author in enumerate(authors):
-    with [col1, col2][idx]:  
-        col_email, col_linkedin = st.columns([1, 1])  # Each column gets equal width
-        with col_email:
-            st.image(email_icon, width=25)
-            st.write(f"[Email]({author['email']})")
-        with col_linkedin:
-            st.image(linkedin_icon, width=25)
-            st.write(f"[LinkedIn]({author['linkedin']})")
+    # Fetch icons
+    response_email = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
+    email_icon = Image.open(io.BytesIO(response_email.content)).resize((30, 30))
+    
+    response_linkedin = requests.get("https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png")
+    linkedin_icon = Image.open(io.BytesIO(response_linkedin.content)).resize((30, 30))
+    
+    # Authors' data
+    authors = [
+        {
+            "name": "Mohammadjavad Hamidia",
+            "title": "Assistant Professor",
+            "affiliation": "Department of Civil, Water and Environmental Engineering at Shahid Beheshti University",
+            "image_url": "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Mohammadjavad%20Hamidia.jpg?raw=true",
+            "email": "mailto:m_hamidia@sbu.ac.ir",
+            "linkedin": "https://www.linkedin.com/in/mohammadjavadhamidia"
+        },
+        {
+            "name": "Samane Rezaei",
+            "title": "Ph.D. Student in Structural Engineering",
+            "affiliation": "Department of Civil Engineering at Sharif University of Technology",
+            "image_url": "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Images/Samane%20Rezaei.jpg?raw=true",
+            "email": "mailto:samane.rezaei@sharif.edu",
+            "linkedin": "https://www.linkedin.com/in/samane-rezaei-3999a5212"
+        }
+    ]
+    
+    # Create two columns
+    col1, col2 = st.columns(2)
+    
+    # Display person details
+    for idx, author in enumerate(authors):
+        with [col1, col2][idx]:  # Assign each person to col1 or col2
+            response = requests.get(author["image_url"])
+            person_image = Image.open(io.BytesIO(response.content))
+            
+            st.image(person_image, use_column_width=True)
+            st.header(author["name"])
+            st.markdown(f"### {author['title']}")
+            st.write(author["affiliation"])
+    
+    # Create another row for email & LinkedIn (Avoiding nested columns)
+    col1, col2 = st.columns(2)
+    
+    for idx, author in enumerate(authors):
+        with [col1, col2][idx]:  
+            col_email, col_linkedin = st.columns([1, 1])  # Each column gets equal width
+            with col_email:
+                st.image(email_icon, width=25)
+                st.write(f"[Email]({author['email']})")
+            with col_linkedin:
+                st.image(linkedin_icon, width=25)
+                st.write(f"[LinkedIn]({author['linkedin']})")
 
     # Create columns to display the image and information for the second row
     col4, col5, col6 = st.columns([1, 0.1, 1])
