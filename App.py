@@ -182,13 +182,13 @@ if section == 'Home':
             st.write(author["affiliation"])
     
             # Horizontal layout for email & LinkedIn
-            email_col, linkedin_col = st.columns([0.2, 1])
+            email_col, linkedin_col = st.columns([1, 1])
             with email_col:
                 st.image(email_icon, width=30)
             with linkedin_col:
                 st.write(f"[Email]({author['email']})")
     
-            email_col, linkedin_col = st.columns([0.2, 1])
+            email_col, linkedin_col = st.columns([1, 1])
             with email_col:
                 st.image(linkedin_icon, width=30)
             with linkedin_col:
