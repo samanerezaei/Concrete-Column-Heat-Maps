@@ -168,11 +168,11 @@ if section == 'Home':
         }
     ]
     
-    # Display authors in two columns
+    # Display authors in a single row, two columns
     col1, col2 = st.columns(2)
     
     for idx, author in enumerate(authors):
-        with [col1, col2][idx % 2]:  # Switch between col1 and col2
+        with [col1, col2][idx]:  # Assign each person to col1 or col2
             response = requests.get(author["image_url"])
             person_image = Image.open(io.BytesIO(response.content))
             
@@ -181,12 +181,18 @@ if section == 'Home':
             st.markdown(f"### {author['title']}")
             st.write(author["affiliation"])
     
-            # Display email and LinkedIn in a vertical layout (NO NESTING)
-            st.image(email_icon, width=30)
-            st.write(f"[Email]({author['email']})")
+            # Horizontal layout for email & LinkedIn
+            email_col, linkedin_col = st.columns([0.2, 1])
+            with email_col:
+                st.image(email_icon, width=30)
+            with linkedin_col:
+                st.write(f"[Email]({author['email']})")
     
-            st.image(linkedin_icon, width=30)
-            st.write(f"[LinkedIn]({author['linkedin']})")
+            email_col, linkedin_col = st.columns([0.2, 1])
+            with email_col:
+                st.image(linkedin_icon, width=30)
+            with linkedin_col:
+                st.write(f"[LinkedIn]({author['linkedin']})")
 
 
 
