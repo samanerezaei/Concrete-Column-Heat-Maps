@@ -143,10 +143,10 @@ if section == 'Home':
 
     # Fetch icons
     response_email = requests.get("https://cdn-icons-png.freepik.com/256/552/552486.png")
-    email_icon = Image.open(io.BytesIO(response_email.content)).resize((30, 30))
+    email_icon = Image.open(io.BytesIO(response_email.content)).resize((25, 25))
     
     response_linkedin = requests.get("https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png")
-    linkedin_icon = Image.open(io.BytesIO(response_linkedin.content)).resize((30, 30))
+    linkedin_icon = Image.open(io.BytesIO(response_linkedin.content)).resize((25, 25))
     
     # Authors' data
     authors = [
@@ -181,23 +181,24 @@ if section == 'Home':
             st.markdown(f"### {author['title']}")
             st.write(author["affiliation"])
     
-    # Second row: Email & LinkedIn (Separate Columns Below Each Person)
+    # Second row: Email & LinkedIn (Single Row per Person)
     col1, col2 = st.columns(2)
     
     for idx, author in enumerate(authors):
         with [col1, col2][idx]:  
             st.markdown(
                 f"""
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="https://cdn-icons-png.freepik.com/256/552/552486.png" width="25">
-                    <a href="{author['email']}">Email</a>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
-                    <img src="https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png" width="25">
-                    <a href="{author['linkedin']}">LinkedIn</a>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <a href="{author['email']}" style="text-decoration: none;">
+                        <img src="https://cdn-icons-png.freepik.com/256/552/552486.png" width="25"> Email
+                    </a>
+                    <a href="{author['linkedin']}" style="text-decoration: none;">
+                        <img src="https://cdn1.iconfinder.com/data/icons/logotypes/32/circle-linkedin-512.png" width="25"> LinkedIn
+                    </a>
                 </div>
                 """, unsafe_allow_html=True
             )
+
 
     # Create columns to display the image and information for the second row
     col4, col5, col6 = st.columns([1, 0.1, 1])
