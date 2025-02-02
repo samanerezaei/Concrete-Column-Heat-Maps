@@ -34,12 +34,6 @@ def load_models(model1_link, model2_link, meta_model_link):
         st.error(f"An error occurred while loading the models: {e}")
         raise
 
-
-# Preprocessing function
-import cv2
-import numpy as np
-from PIL import Image
-
 def enhance_image_contrast(image):
     """ Apply CLAHE for local contrast enhancement """
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
@@ -264,9 +258,10 @@ elif section == 'Guidelines':
         """, unsafe_allow_html=True)
 
 elif section == 'Prediction':
+    # Select the type of Heat Map
     TYPE = st.selectbox('Select the type of Heat Map', ["Based on Drift", "Based on DIS"])
 
-    # Load the models ONCE
+    # Define model links based on the selected type
     if TYPE == "Based on Drift":
         EDP = 'Drift'
         meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20Drift%20classification/meta_model.h5"
@@ -275,33 +270,19 @@ elif section == 'Prediction':
         
     elif TYPE == "Based on DIS":
         EDP = 'DIS'
-        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/meta_model.h5"
-        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/model1.h5"
-        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Models%20of%20DIS%20classification/model2.h5"
-    
-    #st.write("Loading models... Please wait.")
-    meta_model, model1, model2 = load_models(model1_link, model2_link, meta_model_link)
+        meta_model_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/tree/main/Models%20of%20DIS%20classification/meta_model.h5"
+        model1_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/tree/main/Models%20of%20DIS%20classification/model1.h5"
+        model2_link = "https://github.com/samanerezaei/Concrete-Column-Heat-Maps/tree/main/Models%20of%20DIS%20classification/model2.h5"
 
-    # response_meta_model = requests.get(meta_model_link)
-    # response_model1 = requests.get(model1_link)
-    # response_model2 = requests.get(model2_link)
+    # Load models
+    try:
+        meta_model, model1, model2 = load_models(model1_link, model2_link, meta_model_link)
+    except Exception as e:
+        st.error(f"Error loading models: {e}")
+        st.stop()
 
-    # Save the downloaded content to temporary files
-    # with open("meta_model.h5", "wb") as f:
-    #     f.write(response_meta_model.content)
-    # with open("model1.h5", "wb") as f:
-    #     f.write(response_model1.content)
-    # with open("model2.h5", "wb") as f:
-    #     f.write(response_model2.content)
-
-
-    # Load the meta-model and other models from temporary files
-    # meta_model = load_model("meta_model.h5")
-    # model1 = load_model("model1.h5")
-    # model2 = load_model("model2.h5")
-
-    # Get length and width values from the user
-    aspect = st.number_input('Enter the aspect ration (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
+    # Get aspect ratio input from user
+    aspect = st.number_input('Enter the aspect ratio (length to width ratio) of the column', min_value=0.0, value=0.0, step=0.1)
 
     if aspect <= 2:
         InitiateRange = '0'
@@ -313,12 +294,10 @@ elif section == 'Prediction':
         InitiateRange = '4'
         FinalRange = '100'
         
-    # Load the image
+    # Upload and process the image
     uploaded_image = st.file_uploader('Upload an image of a damaged RC column', type=['jpg', 'jpeg', 'png'])
     if uploaded_image is not None:
-        # Load and display the original image
         img = Image.open(uploaded_image)
-        #st.image(img, caption='Uploaded Image', use_column_width=True)
     
         # Process the image
         binary_img = process_damaged_image(img)
@@ -341,37 +320,15 @@ elif section == 'Prediction':
         predicted_label = np.argmax(meta_model.predict(stacking_features), axis=1)
         predicted_class = predicted_label[0] + 1
     
-        # Handle prediction results based on selected type
+        # Define result text based on prediction type
         if TYPE == "Based on Drift":
-            if predicted_class == 1:
-                Range = '0.0 to 0.5'
-            elif predicted_class == 2:
-                Range = '0.5 to 1.0'
-            elif predicted_class == 3:
-                Range = '1.0 to 1.5'
-            elif predicted_class == 4:
-                Range = '1.5 to 2.0'
-            elif predicted_class == 5:
-                Range = '2.0 to 2.5'
-            elif predicted_class == 6:
-                Range = '2.5 to 3.0'
-            elif predicted_class == 7:
-                Range = 'more than 3.0'
-    
+            drift_ranges = ['0.0 to 0.5', '0.5 to 1.0', '1.0 to 1.5', '1.5 to 2.0', '2.0 to 2.5', '2.5 to 3.0', 'more than 3.0']
+            Range = drift_ranges[predicted_class - 1]
             EDP_text = f"The concrete column has experienced about {Range} percent drift ratio."
     
         elif TYPE == "Based on DIS":
-            if predicted_class == 1:
-                Range = '20% to 35%'
-            elif predicted_class == 2:
-                Range = '35% to 50%'
-            elif predicted_class == 3:
-                Range = '50%'
-            elif predicted_class == 4:
-                Range = '50% to 65%'
-            elif predicted_class == 5:
-                Range = 'more than 65%'
-    
+            dis_ranges = ['20% to 35%', '35% to 50%', '50%', '50% to 65%', 'more than 65%']
+            Range = dis_ranges[predicted_class - 1]
             EDP_text = f"The concrete column has lost {Range} of its strength."
     
     # Button to trigger prediction
@@ -386,25 +343,27 @@ elif section == 'Prediction':
         st.markdown(f"<h3>Predicted Class: {predicted_class}</h3>", unsafe_allow_html=True)
         st.markdown(f"<h3>{EDP_text}</h3>", unsafe_allow_html=True)
         
-        # Fetch the image from the URL
+        # Fetch heat map images based on prediction
         crack_url = f'https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Final%20Heat%20Maps/Based%20on%20{EDP}/Aspect%20Ratio%20{InitiateRange}%20-%20{FinalRange}/Crack/{predicted_class}.jpeg?raw=true'
         crushing_url = f'https://github.com/samanerezaei/Concrete-Column-Heat-Maps/blob/main/Final%20Heat%20Maps/Based%20on%20{EDP}/Aspect%20Ratio%20{InitiateRange}%20-%20{FinalRange}/Crushing/{predicted_class}.jpeg?raw=true'
         response_crack = requests.get(crack_url)
         response_crushing = requests.get(crushing_url)
         
-        # Create columns to display images in a line
+        # Display images in columns
         col1, col2, col3, col4 = st.columns(4)
 
-        # Load the images using PIL
+        # Load and resize images
         crack_image = Image.open(io.BytesIO(response_crack.content))
         crushing_image = Image.open(io.BytesIO(response_crushing.content))
         original_image = Image.open(uploaded_image)
-        crack_resized = crack_image.resize((100, (int(aspect))*100))
-        crushing_resized = crushing_image.resize((100, (int(aspect))*100))
-        original_image_resized = original_image.resize((100, (int(aspect))*100))
         
-        # Display the images with captions and increased font size
+        img_height = int(aspect * 100)
+        crack_resized = crack_image.resize((100, img_height))
+        crushing_resized = crushing_image.resize((100, img_height))
+        original_image_resized = original_image.resize((100, img_height))
+        
+        # Display images with captions
         col1.image(original_image_resized, caption='Original Image', use_column_width=True)
-        col2.image(cv2.resize(binary_img.squeeze(), (100, (int(aspect))*100)), caption='Digitized Image',use_column_width=True)
-        col3.image(crack_resized, caption='Critical zones for Cracking Damege', use_column_width=True)
+        col2.image(cv2.resize(binary_img.squeeze(), (100, img_height)), caption='Digitized Image', use_column_width=True)
+        col3.image(crack_resized, caption='Critical zones for Cracking Damage', use_column_width=True)
         col4.image(crushing_resized, caption='Critical zones for Crushing Damage', use_column_width=True)
