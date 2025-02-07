@@ -55,69 +55,68 @@ def enhance_image_contrast(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     return clahe.apply(image)
 
-
 def detect_cracks(image, column_mask):
-    """ Detects cracks using Gabor filtering, adaptive thresholding, and Sobel edge detection """
+    """ Improved crack detection using Canny Edge Detection and Morphological Processing """
     
-    # Apply Gabor filter to enhance line-like structures (cracks)
-    g_kernel = cv2.getGaborKernel((9, 9), 4.0, np.pi / 4, 10.0, 0.5, 0, ktype=cv2.CV_32F)
-    gabor_filtered = cv2.filter2D(image, cv2.CV_8UC3, g_kernel)
+    # Step 1: Apply Gaussian Blur to reduce noise
+    blurred = cv2.GaussianBlur(image, (3, 3), 0)
 
-    # Adaptive Thresholding to enhance crack structures
-    adaptive_thresh = cv2.adaptiveThreshold(
-        gabor_filtered, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 15, 5
-    )
+    # Step 2: Apply Canny Edge Detection (for strong cracks)
+    canny_edges = cv2.Canny(blurred, 20, 90)
 
-    # Sobel Edge Detection to extract edges precisely
-    sobel_x = cv2.Sobel(adaptive_thresh, cv2.CV_64F, 1, 0, ksize=3)
-    sobel_y = cv2.Sobel(adaptive_thresh, cv2.CV_64F, 0, 1, ksize=3)
+    # Step 3: Apply Sobel Filter (for weaker cracks)
+    sobel_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
+    sobel_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=3)
     sobel_edges = cv2.magnitude(sobel_x, sobel_y)
     sobel_edges = cv2.normalize(sobel_edges, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
 
-    # Apply morphological thinning to remove thick edges and get thin cracks
-    _, thin_cracks = cv2.threshold(sobel_edges, 50, 255, cv2.THRESH_BINARY)
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
-    thin_cracks = cv2.morphologyEx(thin_cracks, cv2.MORPH_ERODE, kernel)
+    # Step 4: Merge Sobel and Canny Results
+    combined_edges = cv2.bitwise_or(canny_edges, sobel_edges)
 
-    # Masking cracks within the column area
-    final_cracks = cv2.bitwise_and(thin_cracks, column_mask)
-    
+    # Step 5: Morphological Thinning (To Get Thin Cracks)
+    kernel = np.ones((2, 2), np.uint8)
+    thinned_cracks = cv2.morphologyEx(combined_edges, cv2.MORPH_ERODE, kernel)
+
+    # Step 6: Apply column mask
+    final_cracks = cv2.bitwise_and(thinned_cracks, column_mask)
+
     return final_cracks
 
 
 def detect_crushing(image, column_mask):
-    """ Improved crushing detection using Gaussian Mixture and adaptive filtering """
-    
-    # Step 1: Apply Gaussian Mixture for Adaptive Thresholding
+    """ Advanced crushing detection using GMM, Otsu, and Morphological Refinement """
+
+    # Step 1: Gaussian Mixture Model (GMM) for Adaptive Thresholding
     pixels = image.reshape(-1, 1)
     gmm = GaussianMixture(n_components=2, random_state=42).fit(pixels)
     labels = gmm.predict(pixels)
-    
-    # Convert to binary image
     crushing = labels.reshape(image.shape)
-    crushing = (crushing == crushing.min()).astype(np.uint8) * 255  # Ensure dark regions are detected
+    crushing = (crushing == crushing.min()).astype(np.uint8) * 255  # Ensure dark areas are detected
 
-    # Step 2: Morphological Closing (Removes Small Holes)
-    kernel = np.ones((9, 9), np.uint8)
+    # Step 2: Combine with Otsu's Thresholding for More Accuracy
+    _, otsu_thresh = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    crushing = cv2.bitwise_or(crushing, otsu_thresh)
+
+    # Step 3: Apply Morphological Closing (Fill Gaps)
+    kernel = np.ones((5, 5), np.uint8)
     crushing_cleaned = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel)
 
-    # Step 3: Preserve Large Crushing Regions
+    # Step 4: Preserve Large Crushing Regions
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing_cleaned, connectivity=8)
     crushing_mask = np.zeros_like(image)
     
-    for i in range(1, num_labels):  # Ignore the background label (0)
+    for i in range(1, num_labels):  
         area = stats[i, cv2.CC_STAT_AREA]
-        if area > 500:  # Allow smaller crushing regions
+        if area > 400:  # Adjusted for small crushing areas
             crushing_mask[labels == i] = 255
-    
-    # Step 4: Fill Small Gaps in Crushing Regions (Morphological Reconstruction)
+
+    # Step 5: Final Dilation to Ensure Connectivity
     filled_crushing = cv2.dilate(crushing_mask, np.ones((5,5), np.uint8), iterations=1)
-    
-    # Step 5: Apply Column Mask to Keep Crushing within Column
+
+    # Step 6: Apply column mask to filter results
     final_crushing = cv2.bitwise_and(filled_crushing, column_mask)
 
     return final_crushing
-
 
 def process_damaged_image(image, target_size=(224, 224)):
     """
