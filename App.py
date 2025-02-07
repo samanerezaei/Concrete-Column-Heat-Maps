@@ -56,30 +56,37 @@ def enhance_image_contrast(image):
     return clahe.apply(image)
 
 def detect_cracks(image, column_mask):
-    """ Improved crack detection using Canny Edge Detection and Morphological Processing """
+    """
+    Enhanced crack detection using multi-scale Canny, adaptive thresholding, 
+    and morphological processing.
+    """
+    # Step 1: Apply Histogram Equalization for better contrast
+    equalized = cv2.equalizeHist(image)
     
-    # Step 1: Apply Gaussian Blur to reduce noise
-    blurred = cv2.GaussianBlur(image, (3, 3), 0)
-
-    # Step 2: Apply Canny Edge Detection (for strong cracks)
-    canny_edges = cv2.Canny(blurred, 20, 90)
-
-    # Step 3: Apply Sobel Filter (for weaker cracks)
-    sobel_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
-    sobel_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=3)
-    sobel_edges = cv2.magnitude(sobel_x, sobel_y)
-    sobel_edges = cv2.normalize(sobel_edges, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-
-    # Step 4: Merge Sobel and Canny Results
-    combined_edges = cv2.bitwise_or(canny_edges, sobel_edges)
-
-    # Step 5: Morphological Thinning (To Get Thin Cracks)
+    # Step 2: Multi-scale Canny Edge Detection
+    canny_low = cv2.Canny(equalized, 10, 50)  # Detect fine cracks
+    canny_high = cv2.Canny(equalized, 50, 150)  # Detect major cracks
+    combined_canny = cv2.bitwise_or(canny_low, canny_high)
+    
+    # Step 3: Adaptive Thresholding for faint cracks
+    adaptive_thresh = cv2.adaptiveThreshold(
+        equalized, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5
+    )
+    
+    # Step 4: Merge Adaptive and Canny results
+    merged_edges = cv2.bitwise_or(combined_canny, adaptive_thresh)
+    
+    # Step 5: Morphological Thinning (Skeletonization)
     kernel = np.ones((2, 2), np.uint8)
-    thinned_cracks = cv2.morphologyEx(combined_edges, cv2.MORPH_ERODE, kernel)
-
-    # Step 6: Apply column mask
-    final_cracks = cv2.bitwise_and(thinned_cracks, column_mask)
-
+    thinned_cracks = cv2.morphologyEx(merged_edges, cv2.MORPH_ERODE, kernel)
+    
+    # Step 6: Guided Filtering to remove noise but preserve cracks
+    guided = cv2.ximgproc.guidedFilter(equalized, thinned_cracks, radius=5, eps=50)
+    _, refined_cracks = cv2.threshold(guided, 30, 255, cv2.THRESH_BINARY)
+    
+    # Step 7: Apply column mask
+    final_cracks = cv2.bitwise_and(refined_cracks, column_mask)
+    
     return final_cracks
 
 
