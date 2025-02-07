@@ -8,6 +8,7 @@ from PIL import Image
 import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from sklearn.mixture import GaussianMixture
 
 # Fixing the download and loading of model files
 @st.cache_resource
@@ -83,47 +84,40 @@ def detect_cracks(image, column_mask):
     
     return final_cracks
 
+
 def detect_crushing(image, column_mask):
-    """ Detects crushing using Otsu's thresholding, Watershed segmentation, and K-means clustering """
+    """ Improved crushing detection using Gaussian Mixture and adaptive filtering """
+    
+    # Step 1: Apply Gaussian Mixture for Adaptive Thresholding
+    pixels = image.reshape(-1, 1)
+    gmm = GaussianMixture(n_components=2, random_state=42).fit(pixels)
+    labels = gmm.predict(pixels)
+    
+    # Convert to binary image
+    crushing = labels.reshape(image.shape)
+    crushing = (crushing == crushing.min()).astype(np.uint8) * 255  # Ensure dark regions are detected
 
-    # Apply Otsu's thresholding to highlight dark crushing areas
-    _, crushing = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
-    # Morphological closing to fill small gaps
-    kernel = np.ones((7, 7), np.uint8)
+    # Step 2: Morphological Closing (Removes Small Holes)
+    kernel = np.ones((9, 9), np.uint8)
     crushing_cleaned = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel)
 
-    # Apply distance transform to separate connected areas
-    dist_transform = cv2.distanceTransform(crushing_cleaned, cv2.DIST_L2, 5)
-    _, sure_fg = cv2.threshold(dist_transform, 0.3 * dist_transform.max(), 255, 0)
-    sure_fg = np.uint8(sure_fg)
-    unknown = cv2.subtract(crushing_cleaned, sure_fg)
-
-    # Label markers for Watershed
-    num_labels, markers = cv2.connectedComponents(sure_fg)
-    markers = markers + 1
-    markers[unknown == 255] = 0
-
-    # Apply Watershed
-    img_color = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    cv2.watershed(img_color, markers)
-    crushing_watershed = np.zeros_like(image)
-    crushing_watershed[markers == -1] = 255  # Mark boundaries
-
-    # Combine Otsu + Watershed results
-    crushing_combined = cv2.bitwise_or(crushing_cleaned, crushing_watershed)
-
-    # Apply K-means clustering to refine crushing zones
-    Z = crushing_combined.reshape((-1, 1)).astype(np.float32)
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    _, labels, centers = cv2.kmeans(Z, 2, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-    clustered = labels.reshape(crushing_combined.shape)
-    clustered = (clustered * 255).astype(np.uint8)
-
-    # Mask only the crushing areas within the column
-    final_crushing = cv2.bitwise_and(clustered, column_mask)
+    # Step 3: Preserve Large Crushing Regions
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing_cleaned, connectivity=8)
+    crushing_mask = np.zeros_like(image)
+    
+    for i in range(1, num_labels):  # Ignore the background label (0)
+        area = stats[i, cv2.CC_STAT_AREA]
+        if area > 500:  # Allow smaller crushing regions
+            crushing_mask[labels == i] = 255
+    
+    # Step 4: Fill Small Gaps in Crushing Regions (Morphological Reconstruction)
+    filled_crushing = cv2.dilate(crushing_mask, np.ones((5,5), np.uint8), iterations=1)
+    
+    # Step 5: Apply Column Mask to Keep Crushing within Column
+    final_crushing = cv2.bitwise_and(filled_crushing, column_mask)
 
     return final_crushing
+
 
 def process_damaged_image(image, target_size=(224, 224)):
     """
