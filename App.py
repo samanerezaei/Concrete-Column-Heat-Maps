@@ -74,25 +74,27 @@ def detect_cracks(image, column_mask):
 
 
 def detect_crushing(image, column_mask):
-    """ Detect crushing areas using adaptive thresholding and morphological analysis """
-    # Adaptive Thresholding for dark regions
-    crushing = cv2.adaptiveThreshold(
-        image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 8
-    )
-    crushing = cv2.bitwise_and(crushing, column_mask)
+    """ Detect crushing areas using Otsu's thresholding and morphological operations """
+    # Apply Otsu's thresholding
+    _, crushing = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # Remove small noise and keep only large connected components
-    kernel = np.ones((7, 7), np.uint8)
+    # Remove small noise using morphological closing
+    kernel = np.ones((15, 15), np.uint8)  # Increased kernel size for better noise removal
     crushing_cleaned = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel)
-    
-    # Connected Components to isolate large regions
+
+    # Connected Components to keep only large crushing areas
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing_cleaned, connectivity=8)
     crushing_mask = np.zeros_like(image)
-    for i in range(1, num_labels):  # Ignore the background label 0
+    
+    for i in range(1, num_labels):  # Ignore the background
         area = stats[i, cv2.CC_STAT_AREA]
-        if area > 500:  # Threshold for large regions
+        if area > 1500:  # Increase area threshold for crushing
             crushing_mask[labels == i] = 255
+
+    crushing_mask = cv2.bitwise_and(crushing_mask, column_mask)  # Apply column mask
+    
     return crushing_mask
+
 
 def process_damaged_image(image, target_size=(224, 224)):
     """
@@ -102,11 +104,11 @@ def process_damaged_image(image, target_size=(224, 224)):
     - Detect cracks and crushing areas
     - Generate final digitized output
     """
-    # Step 1: Convert to grayscale
+    # Convert to grayscale
     image_np = np.array(image)
     gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY) if len(image_np.shape) == 3 else image_np
 
-    # Step 2: Column boundary detection
+    # Detect column boundary
     _, thresholded = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
     contours, _ = cv2.findContours(thresholded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     column_mask = np.zeros_like(gray)
@@ -114,21 +116,23 @@ def process_damaged_image(image, target_size=(224, 224)):
         largest_contour = max(contours, key=cv2.contourArea)
         cv2.drawContours(column_mask, [largest_contour], -1, 255, thickness=-1)
 
-    # Step 3: Enhance contrast
+    # Enhance contrast
     contrast_enhanced = enhance_image_contrast(gray)
 
-    # Step 4: Detect cracks and crushing separately
+    # Detect cracks and crushing separately
     cracks_mask = detect_cracks(contrast_enhanced, column_mask)
     crushing_mask = detect_crushing(contrast_enhanced, column_mask)
 
-    # Step 5: Combine results
+    # Final digitized image
     final_output = np.full_like(gray, 255)  # White background
-    final_output[crushing_mask > 0] = 0  # Crushing areas as solid black
+    final_output[crushing_mask > 0] = 0  # Crushing in solid black
     final_output[cracks_mask > 0] = 0  # Cracks as thin black lines
 
-    # Resize to the target size
+    # Resize for model input
     final_resized = cv2.resize(final_output, target_size)
+    
     return final_resized
+
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
