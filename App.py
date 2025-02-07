@@ -55,11 +55,23 @@ def enhance_image_contrast(image):
     return clahe.apply(image)
 
 def detect_cracks(image, column_mask):
-    """ Detect thin cracks using Canny edge detection with enhanced contrast """
-    blurred = cv2.GaussianBlur(image, (3, 3), 0)
-    edges = cv2.Canny(blurred, 30, 90)
-    cracks = cv2.bitwise_and(edges, column_mask)  # Mask cracks within the column
+    """ Detect thin cracks using Top-Hat filtering and Sobel edge detection """
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    tophat = cv2.morphologyEx(image, cv2.MORPH_TOPHAT, kernel)  # Enhances thin features
+    
+    sobelx = cv2.Sobel(tophat, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(tophat, cv2.CV_64F, 0, 1, ksize=3)
+    sobel_edges = cv2.magnitude(sobelx, sobely)
+    sobel_edges = cv2.normalize(sobel_edges, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    
+    # Threshold to keep only strong edges
+    _, cracks = cv2.threshold(sobel_edges, 50, 255, cv2.THRESH_BINARY)
+
+    # Apply the column mask
+    cracks = cv2.bitwise_and(cracks, column_mask)
+    
     return cracks
+
 
 def detect_crushing(image, column_mask):
     """ Detect crushing areas using adaptive thresholding and morphological analysis """
