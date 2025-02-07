@@ -7,3 +7,4 @@ opencv-python-headless
 requests
 pillow
 altair==4.2.2
+scikit-learn==1.6.1
