@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 
 # Fixing the download and loading of model files
-@st.cache
+@st.cache_resource
 def load_models(model1_link, model2_link, meta_model_link):
     try:
         # Define the local filenames
