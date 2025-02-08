@@ -71,28 +71,33 @@ def convert_pil_to_numpy(image):
     
     return image
 
+
 def detect_cracks(image):
     """
-    Detect cracking damage as thin black lines.
+    Detect cracking damage as thin black lines with reduced thickness.
     """
     image = convert_pil_to_numpy(image)
     
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
+    # Apply Gaussian Blur for noise reduction
+    image = cv2.GaussianBlur(image, (3, 3), 0)
+    
     # Apply CLAHE for contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Apply Multi-scale Canny Edge Detection
-    edges1 = cv2.Canny(enhanced, 50, 150)
-    edges2 = cv2.Canny(enhanced, 100, 200)
-    cracks = cv2.bitwise_or(edges1, edges2)
+    # Apply Canny Edge Detection with refined thresholds
+    edges = cv2.Canny(enhanced, 80, 180)  # Adjusted values to reduce over-detection
     
     # Morphological processing to refine cracks
-    kernel = np.ones((2, 2), np.uint8)
-    cracks = cv2.morphologyEx(cracks, cv2.MORPH_DILATE, kernel, iterations=1)
-    
+    kernel = np.ones((1, 1), np.uint8)
+    cracks = cv2.morphologyEx(edges, cv2.MORPH_DILATE, kernel, iterations=1)
+
+    # Apply thinning to reduce thickness of cracks
+    cracks = cv2.ximgproc.thinning(cracks)
+
     return cracks
 
 def detect_crushing(image):
