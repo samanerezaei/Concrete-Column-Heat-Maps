@@ -85,13 +85,11 @@ def detect_cracks(image):
     enhanced = clahe.apply(image)
     
     # Apply Multi-scale Canny Edge Detection
-    edges1 = cv2.Canny(enhanced, 50, 150)
-    edges2 = cv2.Canny(enhanced, 100, 200)
-    cracks = cv2.bitwise_or(edges1, edges2)
+    edges = cv2.Canny(enhanced, 50, 150)
     
     # Morphological processing to refine cracks
     kernel = np.ones((1, 1), np.uint8)
-    cracks = cv2.morphologyEx(cracks, cv2.MORPH_DILATE, kernel, iterations=1)
+    cracks = cv2.morphologyEx(edges, cv2.MORPH_DILATE, kernel, iterations=1)
     
     return cracks
 
@@ -113,7 +111,7 @@ def detect_crushing(image):
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_OPEN, kernel, iterations=2)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
     
     return crushing
 
