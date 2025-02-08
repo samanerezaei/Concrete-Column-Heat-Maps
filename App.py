@@ -93,39 +93,43 @@ def detect_cracks(image, column_mask):
 
 
 def detect_crushing(image, column_mask):
-    """ Advanced crushing detection using GMM, Otsu, and Morphological Refinement """
+    """Improved crushing detection using GMM, Otsu, and Morphological Refinement"""
 
-    # Step 1: Gaussian Mixture Model (GMM) for Adaptive Thresholding
-    pixels = image.reshape(-1, 1)
+    # Step 1: Apply CLAHE to enhance contrast
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(image)
+
+    # Step 2: Gaussian Mixture Model (GMM) for Adaptive Thresholding
+    pixels = enhanced.reshape(-1, 1)
     gmm = GaussianMixture(n_components=2, random_state=42).fit(pixels)
     labels = gmm.predict(pixels)
     crushing = labels.reshape(image.shape)
-    crushing = (crushing == crushing.min()).astype(np.uint8) * 255  # Ensure dark areas are detected
 
-    # Step 2: Combine with Otsu's Thresholding for More Accuracy
-    _, otsu_thresh = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    crushing = cv2.bitwise_or(crushing, otsu_thresh)
+    # Ensure that only **darker regions** are classified as crushing
+    crushing = (crushing == crushing.min()).astype(np.uint8) * 255
 
-    # Step 3: Apply Morphological Closing (Fill Gaps)
-    kernel = np.ones((5, 5), np.uint8)
-    crushing_cleaned = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel)
+    # Step 3: Combine with Otsu's Thresholding for More Robust Detection
+    _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    crushing = cv2.bitwise_and(crushing, otsu_thresh)
 
-    # Step 4: Preserve Large Crushing Regions
+    # Step 4: Morphological Closing to Remove Small Artifacts
+    kernel = np.ones((3, 3), np.uint8)
+    crushing_cleaned = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+    # Step 5: Preserve Only Large Damaged Regions
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing_cleaned, connectivity=8)
     crushing_mask = np.zeros_like(image)
     
     for i in range(1, num_labels):  
         area = stats[i, cv2.CC_STAT_AREA]
-        if area > 400:  # Adjusted for small crushing areas
+        if area > 500:  # Only keep **large damage areas** (adjust this threshold if needed)
             crushing_mask[labels == i] = 255
 
-    # Step 5: Final Dilation to Ensure Connectivity
-    filled_crushing = cv2.dilate(crushing_mask, np.ones((5,5), np.uint8), iterations=1)
-
-    # Step 6: Apply column mask to filter results
-    final_crushing = cv2.bitwise_and(filled_crushing, column_mask)
+    # Step 6: Apply column mask to ensure correct boundary detection
+    final_crushing = cv2.bitwise_and(crushing_mask, column_mask)
 
     return final_crushing
+
 
 def process_damaged_image(image, target_size=(224, 224)):
     """
