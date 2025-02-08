@@ -80,16 +80,21 @@ def detect_cracks(image):
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
+    # Reduce noise using Gaussian Blur
+    image = cv2.GaussianBlur(image, (3, 3), 0)
+    
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
     # Apply Multi-scale Canny Edge Detection
-    edges = cv2.Canny(enhanced, 50, 150)
+    edges1 = cv2.Canny(enhanced, 50, 150)
+    edges2 = cv2.Canny(enhanced, 100, 200)
+    cracks = cv2.bitwise_or(edges1, edges2)
     
     # Morphological processing to refine cracks
     kernel = np.ones((1, 1), np.uint8)
-    cracks = cv2.morphologyEx(edges, cv2.MORPH_DILATE, kernel, iterations=1)
+    cracks = cv2.morphologyEx(cracks, cv2.MORPH_DILATE, kernel, iterations=1)
     
     return cracks
 
@@ -102,6 +107,9 @@ def detect_crushing(image):
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
+    # Reduce noise using Gaussian Blur
+    image = cv2.GaussianBlur(image, (5, 5), 0)
+    
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
@@ -111,9 +119,17 @@ def detect_crushing(image):
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_OPEN, kernel, iterations=2)
     
-    return crushing
+    # Filter out small regions that are mistakenly classified as crushing
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
+    min_area = 500  # Minimum area for crushing detection
+    filtered_crushing = np.zeros_like(crushing)
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] >= min_area:
+            filtered_crushing[labels == i] = 255
+    
+    return filtered_crushing
 
 def process_damaged_image(image):
     """
