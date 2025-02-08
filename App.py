@@ -97,7 +97,7 @@ def detect_cracks(image):
 
 def detect_crushing(image):
     """
-    Detect crushing damage as black filled areas.
+    Detect crushing damage as black filled areas while avoiding shadow misclassification.
     """
     image = convert_pil_to_numpy(image)
     
@@ -108,14 +108,18 @@ def detect_crushing(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Apply adaptive thresholding with refined parameters
+    # Use adaptive thresholding with a high bias to prevent shadows from being misclassified
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 10
     )
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
     crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    
+    # Filter out large shadow-like regions by removing low contrast areas
+    mean_intensity = np.mean(image)
+    crushing[image > mean_intensity * 0.8] = 255  # Shadows are usually darker, ignore them
     
     return crushing
 
