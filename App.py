@@ -80,9 +80,6 @@ def detect_cracks(image):
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
-    # Reduce noise using Gaussian Blur
-    image = cv2.GaussianBlur(image, (3, 3), 0)
-    
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
@@ -107,31 +104,18 @@ def detect_crushing(image):
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
-    # Reduce noise using Gaussian Blur
-    image = cv2.GaussianBlur(image, (5, 5), 0)
-    
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Use Adaptive Thresholding to avoid shadow misclassification
-    adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7
-    )
+    # Use Otsu's thresholding for better accuracy
+    _, crushing = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
-    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_OPEN, kernel, iterations=2)
     
-    # Filter out small regions that are mistakenly classified as crushing
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 500  # Minimum area for crushing detection
-    filtered_crushing = np.zeros_like(crushing)
-    for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_area:
-            filtered_crushing[labels == i] = 255
-    
-    return filtered_crushing
+    return crushing
 
 def process_damaged_image(image):
     """
@@ -156,6 +140,7 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
+
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
     
