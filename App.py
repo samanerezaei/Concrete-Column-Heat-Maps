@@ -98,42 +98,37 @@ def detect_cracks(image):
 
 def detect_crushing(image):
     """
-    Detect crushing damage while reducing false negatives.
+    Detect crushing damage with improved accuracy, reducing false positives.
     """
     image = convert_pil_to_numpy(image)
 
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
 
-    # Apply Median Blur to remove noise while keeping edges sharp
-    image = cv2.medianBlur(image, 5)
+    # **Step 1: Preprocessing**
+    image = cv2.GaussianBlur(image, (5, 5), 0)  # Reduce small noise
 
-    # Apply CLAHE for contrast enhancement
+    # Apply CLAHE for local contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
 
-    # **Step 1: Adaptive Thresholding**
+    # **Step 2: Thresholding**
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 41, 8
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 41, 5
     )
 
-    # **Step 2: Otsu’s Thresholding**
     _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # Combine both thresholding techniques
-    crushing = cv2.bitwise_or(adaptive_thresh, otsu_thresh)
+    # Combine both thresholding results
+    crushing = cv2.bitwise_and(adaptive_thresh, otsu_thresh)
 
-    # **Step 3: Morphological Closing to refine crushing areas**
-    kernel = np.ones((5, 5), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
+    # **Step 3: Morphological Processing**
+    kernel = np.ones((3, 3), np.uint8)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=1)
 
-    # **Step 4: Dilate to capture more crushing areas**
-    kernel_dilate = np.ones((3, 3), np.uint8)
-    crushing = cv2.dilate(crushing, kernel_dilate, iterations=1)
-
-    # **Step 5: Remove small false positive areas**
+    # **Step 4: Remove small false-positive regions**
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 2000  # **Lowered to prevent missing small crushing zones**
+    min_area = 1500  # Adjusted for better balance
     filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
@@ -141,6 +136,7 @@ def detect_crushing(image):
             filtered_crushing[labels == i] = 255
 
     return filtered_crushing
+
 
 def process_damaged_image(image):
     """
