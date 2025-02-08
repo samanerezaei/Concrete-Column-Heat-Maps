@@ -61,7 +61,7 @@ from PIL import Image
 
 def convert_pil_to_numpy(image):
     """
-    Convert a PIL image to a NumPy array and ensure it's in grayscale format.
+    Convert a PIL image to a NumPy array, ensuring grayscale format.
     """
     if isinstance(image, Image.Image):
         image = np.array(image)
@@ -76,6 +76,9 @@ def detect_cracks(image):
     Detect cracking damage as thin black lines.
     """
     image = convert_pil_to_numpy(image)
+    
+    # Resize to (224, 224) for model consistency
+    image = cv2.resize(image, (224, 224))
     
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
@@ -98,6 +101,9 @@ def detect_crushing(image):
     """
     image = convert_pil_to_numpy(image)
     
+    # Resize to (224, 224) for model consistency
+    image = cv2.resize(image, (224, 224))
+    
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
@@ -119,6 +125,9 @@ def process_damaged_image(image):
     """
     image = convert_pil_to_numpy(image)
     
+    # Resize to (224, 224) for model consistency
+    image = cv2.resize(image, (224, 224))
+    
     # Detect cracks and crushing
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
@@ -133,7 +142,6 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
-
 
 
 # Streamlit App Section
