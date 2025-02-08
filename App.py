@@ -73,46 +73,40 @@ def convert_pil_to_numpy(image):
 
 def detect_cracks(image):
     """
-    Improved crack detection: Ensures continuous cracks and avoids broken lines.
+    Detect cracking damage with reduced thickness and no broken lines.
     """
     image = convert_pil_to_numpy(image)
 
-    # Resize image
+    # Resize image for consistency
     image = cv2.resize(image, (224, 224))
 
-    # Apply Gaussian Blur to smooth the image and reduce noise
-    denoised = cv2.GaussianBlur(image, (5, 5), 0)  # Slightly higher kernel to reduce noise better
+    # Apply Gaussian Blur for noise reduction
+    denoised = cv2.GaussianBlur(image, (3, 3), 0)  # Lower kernel size to reduce smoothing
 
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(denoised)
 
-    # Apply Sobel Edge Detection
-    sobelx = cv2.Sobel(enhanced, cv2.CV_64F, 1, 0, ksize=3)
-    sobely = cv2.Sobel(enhanced, cv2.CV_64F, 0, 1, ksize=3)
-    sobel_edges = cv2.magnitude(sobelx, sobely)
-    sobel_edges = np.uint8(sobel_edges)
+    # Apply Canny Edge Detection for cracks
+    edges = cv2.Canny(enhanced, 80, 180)
 
-    # Apply Threshold to detect cracks
-    _, cracks = cv2.threshold(sobel_edges, 100, 255, cv2.THRESH_BINARY)  # Adjusted threshold
-
-    # Apply Morphological Closing to fill small gaps in cracks
-    kernel = np.ones((3, 3), np.uint8)  # Slightly larger kernel for better connection of cracks
-    cracks = cv2.morphologyEx(cracks, cv2.MORPH_CLOSE, kernel, iterations=2)  # Increased iterations
-
-    # Apply Morphological Dilation to slightly expand the cracks and make them more continuous
-    cracks = cv2.dilate(cracks, kernel, iterations=1)
+    # Apply Morphological Closing (filling small gaps)
+    kernel = np.ones((3, 3), np.uint8)  # Slightly smaller kernel for better detail preservation
+    cracks = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=1)  # Less iterations to keep cracks thin
 
     # Remove small noise using Connected Components Analysis
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cracks, connectivity=8)
-    min_area = 80  # Minimum area to remove small noise
+    min_area = 50  # Minimum area to remove small noise (adjusted to keep more details)
     filtered_cracks = np.zeros_like(cracks)
 
     for i in range(1, num_labels):
         if stats[i, cv2.CC_STAT_AREA] >= min_area:
             filtered_cracks[labels == i] = 255
 
-    return filtered_cracks
+    # Thinning: Reduce the thickness of cracks (without making them too thin)
+    thin_cracks = cv2.ximgproc.thinning(filtered_cracks)
+
+    return thin_cracks
 
 def detect_crushing(image):
     """
