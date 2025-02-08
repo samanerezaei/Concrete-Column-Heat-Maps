@@ -98,43 +98,48 @@ def detect_cracks(image):
 
 def detect_crushing(image):
     """
-    Improved crushing detection: Filters out cracks and keeps only large crushed areas.
+    Improved crushing detection: Separates cracks from crushed zones more effectively.
     """
     image = convert_pil_to_numpy(image)
 
-    # Resize for consistency
+    # Resize image
     image = cv2.resize(image, (224, 224))
 
-    # **Step 1: Preprocessing**
-    image = cv2.GaussianBlur(image, (7, 7), 0)  # Reduce noise and smooth the image
+    # **Step 1: Apply Heavy Gaussian Blur (Suppresses small edges)**
+    blurred = cv2.GaussianBlur(image, (9, 9), 0)  # Stronger blur to remove fine edges
 
-    # Apply CLAHE for better contrast
+    # **Step 2: CLAHE for better contrast in large areas**
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(image)
+    enhanced = clahe.apply(blurred)
 
-    # **Step 2: Edge-aware Enhancement**
-    laplacian = cv2.Laplacian(enhanced, cv2.CV_64F)
-    laplacian = cv2.convertScaleAbs(laplacian)
-    enhanced = cv2.subtract(enhanced, laplacian)  # Suppress edges before thresholding
+    # **Step 3: Otsu's Thresholding**
+    _, thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # **Step 3: Adaptive & Otsu Thresholding**
-    _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # **Step 4: Morphological Operations**
+    kernel = np.ones((7, 7), np.uint8)
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # **Step 4: Texture-based Filtering (New Step)**
-    # This removes thin regions (cracks) while keeping large, solid crushed areas
-    kernel = np.ones((5, 5), np.uint8)
-    crushing = cv2.morphologyEx(otsu_thresh, cv2.MORPH_OPEN, kernel, iterations=2)
-
-    # **Step 5: Remove Small False Positives**
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 5000  # Increased to remove cracks while keeping crushed areas
-    filtered_crushing = np.zeros_like(crushing)
+    # **Step 5: Remove small areas mistaken for crushing**
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(thresh, connectivity=8)
+    min_area = 3000  # Adjusted for better accuracy
+    filtered_crushing = np.zeros_like(thresh)
 
     for i in range(1, num_labels):
         if stats[i, cv2.CC_STAT_AREA] >= min_area:
             filtered_crushing[labels == i] = 255
 
+    # **Step 6: Contour Filtering - Removes small thin cracks that survived**
+    contours, _ = cv2.findContours(filtered_crushing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        perimeter = cv2.arcLength(cnt, True)
+        circularity = 4 * np.pi * (area / (perimeter ** 2 + 1e-5))  # Avoid division by zero
+
+        if circularity < 0.2:  # If the shape is too thin, remove it (likely a crack)
+            cv2.drawContours(filtered_crushing, [cnt], -1, 0, -1)
+
     return filtered_crushing
+
 
 def process_damaged_image(image):
     """
