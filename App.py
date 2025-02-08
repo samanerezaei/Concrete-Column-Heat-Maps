@@ -77,21 +77,21 @@ def detect_cracks(image):
     """
     image = convert_pil_to_numpy(image)
     
-    # Apply Gaussian Blur to remove noise
-    image = cv2.GaussianBlur(image, (3, 3), 0)
+    # Resize to (224, 224) for model consistency
+    image = cv2.resize(image, (224, 224))
     
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
     # Apply Multi-scale Canny Edge Detection
-    edges1 = cv2.Canny(enhanced, 20, 80)
-    edges2 = cv2.Canny(enhanced, 80, 200)
+    edges1 = cv2.Canny(enhanced, 50, 150)
+    edges2 = cv2.Canny(enhanced, 100, 200)
     cracks = cv2.bitwise_or(edges1, edges2)
     
-    # Morphological thinning to refine cracks
-    kernel = np.ones((1, 1), np.uint8)
-    cracks = cv2.morphologyEx(cracks, cv2.MORPH_ERODE, kernel)
+    # Morphological processing to refine cracks
+    kernel = np.ones((2, 2), np.uint8)
+    cracks = cv2.morphologyEx(cracks, cv2.MORPH_DILATE, kernel, iterations=1)
     
     return cracks
 
@@ -101,31 +101,19 @@ def detect_crushing(image):
     """
     image = convert_pil_to_numpy(image)
     
-    # Apply Gaussian Blur to remove noise
-    image = cv2.GaussianBlur(image, (5, 5), 0)
+    # Resize to (224, 224) for model consistency
+    image = cv2.resize(image, (224, 224))
     
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Use adaptive thresholding with a high bias to prevent shadows from being misclassified
-    adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 10
-    )
-    
     # Use Otsu's thresholding for better accuracy
-    _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    
-    # Combine both thresholding results
-    crushing = cv2.bitwise_and(adaptive_thresh, otsu_thresh)
+    _, crushing = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
-    
-    # Filter out large shadow-like regions by removing low contrast areas
-    mean_intensity = np.mean(image)
-    crushing[image > mean_intensity * 0.8] = 255  # Shadows are usually darker, ignore them
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_OPEN, kernel, iterations=2)
     
     return crushing
 
@@ -134,6 +122,9 @@ def process_damaged_image(image):
     Process the image to detect cracking and crushing damages.
     """
     image = convert_pil_to_numpy(image)
+    
+    # Resize to (224, 224) for model consistency
+    image = cv2.resize(image, (224, 224))
     
     # Detect cracks and crushing
     cracks_mask = detect_cracks(image)
