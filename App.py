@@ -71,18 +71,17 @@ def convert_pil_to_numpy(image):
     
     return image
 
-
 def detect_cracks(image):
     """
-    Improved crack detection: Removes noise and keeps single-pixel cracks.
+    Improved crack detection: Keeps single-pixel cracks without noise.
     """
     image = convert_pil_to_numpy(image)
 
     # Resize image
     image = cv2.resize(image, (224, 224))
 
-    # Apply Gaussian Blur to smooth the image
-    denoised = cv2.GaussianBlur(image, (3, 3), 0)  # Reduced kernel size
+    # Apply Median Filter to remove salt-and-pepper noise
+    denoised = cv2.medianBlur(image, 3)
 
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -94,23 +93,23 @@ def detect_cracks(image):
     sobel_edges = cv2.magnitude(sobelx, sobely)
     sobel_edges = np.uint8(sobel_edges)
 
-    # Apply Threshold with a higher value to filter out weak edges
-    _, cracks = cv2.threshold(sobel_edges, 100, 255, cv2.THRESH_BINARY)  # Increased threshold
+    # Apply Threshold with a higher value to filter out weak edges (noise)
+    _, cracks = cv2.threshold(sobel_edges, 80, 255, cv2.THRESH_BINARY)  # Increased from 50 to 80
 
-    # Apply Morphological Closing to fill small gaps in cracks
+    # Apply Morphological Erosion to remove extra edges
     kernel = np.ones((1, 1), np.uint8)
-    cracks = cv2.morphologyEx(cracks, cv2.MORPH_CLOSE, kernel, iterations=1)
+    cracks = cv2.morphologyEx(cracks, cv2.MORPH_ERODE, kernel, iterations=1)
 
     # Remove small noise using Connected Components Analysis
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cracks, connectivity=8)
-    min_area = 80  # Increased from 50 to 80 to further remove small noise
+    min_area = 50  # Minimum area for valid cracks (small noise will be removed)
     filtered_cracks = np.zeros_like(cracks)
 
     for i in range(1, num_labels):
         if stats[i, cv2.CC_STAT_AREA] >= min_area:
             filtered_cracks[labels == i] = 255
 
-    # Apply thinning to reduce thickness of cracks
+    # Apply thinning to reduce thickness of cracks to one pixel
     filtered_cracks = cv2.ximgproc.thinning(filtered_cracks)
 
     return filtered_cracks
