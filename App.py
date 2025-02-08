@@ -97,7 +97,7 @@ def detect_cracks(image):
 
 def detect_crushing(image):
     """
-    Detect crushing damage as black filled areas while avoiding shadow misclassification.
+    Detect crushing damage as black filled areas with improved shadow filtering.
     """
     image = convert_pil_to_numpy(image)
     
@@ -108,29 +108,14 @@ def detect_crushing(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Adaptive thresholding with better shadow filtering
-    adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 12
-    )
+    # Apply Otsu's thresholding for better shadow distinction
+    _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
-    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    crushing = cv2.morphologyEx(otsu_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
     
-    # **Filter out shadows and incorrect detections**
-    mean_intensity = np.mean(image)
-    crushing[image > mean_intensity * 0.75] = 255  # Shadows are usually darker, ignore them
-
-    # **Keep only large connected components (remove small noise)**
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    filtered_crushing = np.zeros_like(crushing)
-    
-    for i in range(1, num_labels):  
-        area = stats[i, cv2.CC_STAT_AREA]
-        if area > 1500:  # **Increase threshold to remove incorrect crushing**
-            filtered_crushing[labels == i] = 255
-
-    return filtered_crushing
+    return crushing
 
 def process_damaged_image(image):
     """
@@ -155,10 +140,6 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
-
-
-
-
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
