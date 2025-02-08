@@ -108,26 +108,26 @@ def detect_crushing(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Apply adaptive thresholding with a higher bias to prevent shadow misclassification
+    # Adaptive thresholding with better shadow filtering
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 15
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 12
     )
     
-    # **New Step:** Remove small noise using Morphological Operations
+    # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
     crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
     
-    # **New Step:** Filter out large shadow-like regions by removing low-contrast areas
+    # **Filter out shadows and incorrect detections**
     mean_intensity = np.mean(image)
-    crushing[image > mean_intensity * 0.85] = 255  # Shadows are usually darker, ignore them
-    
-    # **New Step:** Keep only large connected components (remove small noise)
+    crushing[image > mean_intensity * 0.75] = 255  # Shadows are usually darker, ignore them
+
+    # **Keep only large connected components (remove small noise)**
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
     filtered_crushing = np.zeros_like(crushing)
     
     for i in range(1, num_labels):  
         area = stats[i, cv2.CC_STAT_AREA]
-        if area > 500:  # **New threshold to eliminate small artifacts**
+        if area > 1500:  # **Increase threshold to remove incorrect crushing**
             filtered_crushing[labels == i] = 255
 
     return filtered_crushing
@@ -155,6 +155,7 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
+
 
 
 
