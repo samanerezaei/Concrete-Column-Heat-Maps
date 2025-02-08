@@ -103,33 +103,21 @@ def detect_crushing(image):
     
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
-
-    # Apply stronger Gaussian Blur to remove unwanted small details
-    image = cv2.GaussianBlur(image, (7, 7), 0)
-
-    # Apply CLAHE for contrast enhancement (lower clipLimit to reduce over-enhancement)
-    clahe = cv2.createCLAHE(clipLimit=1.2, tileGridSize=(8, 8))
-    enhanced = clahe.apply(image)
-
-    # Use Adaptive Thresholding with better blockSize and constant values
-    crushing = cv2.adaptiveThreshold(enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                     cv2.THRESH_BINARY_INV, 31, 5)
-
-    # Remove small noise using Morphological Operations
-    kernel = np.ones((5, 5), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
-
-    # **New Step: Remove small areas that are mistakenly classified as crushing**
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
     
-    min_area = 1000  # Minimum area for crushing detection (Increase if too much false detection)
-    filtered_crushing = np.zeros_like(crushing)
-    for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_area:
-            filtered_crushing[labels == i] = 255
-
-    return filtered_crushing
-
+    # Apply CLAHE for contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(image)
+    
+    # Adaptive thresholding for better separation
+    adaptive_thresh = cv2.adaptiveThreshold(
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7
+    )
+    
+    # Remove small noise using Morphological Operations
+    kernel = np.ones((3, 3), np.uint8)
+    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    
+    return crushing
 
 def process_damaged_image(image):
     """
