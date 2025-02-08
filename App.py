@@ -55,26 +55,27 @@ def enhance_image_contrast(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     return clahe.apply(image)
 
-
 def detect_cracks(image):
     """
     Detects cracking damage as thin black lines.
     """
-    # Convert to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Ensure image is properly formatted
+    if not isinstance(image, np.ndarray):
+        raise ValueError("Input image is not a valid NumPy array")
+    
+    if len(image.shape) == 2:  # Already grayscale
+        gray = image
+    else:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(gray)
     
     # Apply Multi-scale Canny Edge Detection
-    edges1 = cv2.Canny(enhanced, 5, 30)
+    edges1 = cv2.Canny(enhanced, 10, 50)
     edges2 = cv2.Canny(enhanced, 50, 150)
     cracks = cv2.bitwise_or(edges1, edges2)
-    
-    # Use morphological thinning to refine cracks
-    kernel = np.ones((2, 2), np.uint8)
-    cracks = cv2.morphologyEx(cracks, cv2.MORPH_DILATE, kernel)
     
     return cracks
 
@@ -82,37 +83,36 @@ def detect_crushing(image):
     """
     Detects crushing damage as black filled areas.
     """
-    # Convert to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Ensure image is properly formatted
+    if not isinstance(image, np.ndarray):
+        raise ValueError("Input image is not a valid NumPy array")
+    
+    if len(image.shape) == 2:  # Already grayscale
+        gray = image
+    else:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(gray)
     
-    # Apply Gaussian Blur to reduce noise
-    blurred = cv2.GaussianBlur(enhanced, (5,5), 0)
-    
     # Apply Otsu's thresholding
-    _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    _, binary = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
     crushing = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=2)
     
-    # Filter out small components to retain significant crushing areas
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    filtered_crushing = np.zeros_like(crushing)
-    
-    for i in range(1, num_labels):  
-        if stats[i, cv2.CC_STAT_AREA] > 1000:
-            filtered_crushing[labels == i] = 255
-    
-    return filtered_crushing
+    return crushing
 
 def process_damaged_image(image):
     """
     Process the image to detect cracking and crushing damages.
     """
+    # Ensure input is a valid image
+    if not isinstance(image, np.ndarray):
+        raise ValueError("Invalid image format. Expected a NumPy array.")
+    
     # Detect cracks and crushing
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
@@ -127,6 +127,7 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
+
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
