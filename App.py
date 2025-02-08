@@ -73,7 +73,7 @@ def convert_pil_to_numpy(image):
 
 def detect_cracks(image):
     """
-    Detect cracking damage as thin black lines while reducing false detections.
+    Detect cracking damage as thin black lines with reduced thickness.
     """
     image = convert_pil_to_numpy(image)
     
@@ -93,7 +93,10 @@ def detect_cracks(image):
     # Morphological processing to refine cracks
     kernel = np.ones((1, 1), np.uint8)
     cracks = cv2.morphologyEx(edges, cv2.MORPH_DILATE, kernel, iterations=1)
-    
+
+    # Apply thinning to reduce thickness of cracks
+    cracks = cv2.ximgproc.thinning(cracks)
+
     return cracks
 
 def detect_crushing(image):
