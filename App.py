@@ -82,12 +82,12 @@ def detect_cracks(image):
     enhanced = clahe.apply(image)
     
     # Apply Multi-scale Canny Edge Detection
-    edges1 = cv2.Canny(enhanced, 10, 50)
-    edges2 = cv2.Canny(enhanced, 50, 150)
+    edges1 = cv2.Canny(enhanced, 20, 80)
+    edges2 = cv2.Canny(enhanced, 80, 200)
     cracks = cv2.bitwise_or(edges1, edges2)
     
     # Morphological thinning to refine cracks
-    kernel = np.ones((1, 1), np.uint8)  # Smaller kernel for fine cracks
+    kernel = np.ones((1, 1), np.uint8)
     cracks = cv2.morphologyEx(cracks, cv2.MORPH_ERODE, kernel)
     
     return cracks
@@ -102,13 +102,13 @@ def detect_crushing(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Apply adaptive thresholding with a refined block size and constant
+    # Apply adaptive thresholding with refined parameters
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 19, 7
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7
     )
     
     # Remove small noise using Morphological Operations
-    kernel = np.ones((5, 5), np.uint8)  # Increased kernel size for better crushing detection
+    kernel = np.ones((3, 3), np.uint8)
     crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
     
     return crushing
@@ -133,8 +133,6 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
-
-
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
