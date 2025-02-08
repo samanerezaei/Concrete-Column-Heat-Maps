@@ -108,20 +108,24 @@ def detect_cracks(image):
 
     return thin_cracks
 
+import cv2
+import numpy as np
+from PIL import Image
+
 def detect_crushing(image):
     """
     Detect crushing damage as black filled areas while avoiding misclassification of cracks.
     """
     image = convert_pil_to_numpy(image)
 
-    # Resize to (224, 224) for model consistency
+    # Resize image for consistency
     image = cv2.resize(image, (224, 224))
 
     # Apply Gaussian Blur to remove small details
     image = cv2.GaussianBlur(image, (7, 7), 0)
 
     # Apply CLAHE for contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))  
+    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))  # Reduced contrast enhancement
     enhanced = clahe.apply(image)
 
     # Step 1: Adaptive Thresholding (detect potential crushing zones)
