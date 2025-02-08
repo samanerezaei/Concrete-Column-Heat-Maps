@@ -114,12 +114,14 @@ def detect_crushing(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Use Otsu's thresholding for better accuracy
-    _, crushing = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # Use Adaptive Thresholding to avoid shadow misclassification
+    adaptive_thresh = cv2.adaptiveThreshold(
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 7
+    )
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_OPEN, kernel, iterations=2)
+    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
     
     # Filter out small regions that are mistakenly classified as crushing
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
@@ -154,7 +156,6 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
-
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
     
