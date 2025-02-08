@@ -98,47 +98,40 @@ def detect_cracks(image):
 
 def detect_crushing(image):
     """
-    Improved crushing detection: Separates cracks from crushed zones more effectively.
+    Improved crushing detection: Keeps real crushing areas while avoiding cracks.
     """
     image = convert_pil_to_numpy(image)
 
-    # Resize image
+    # **Step 1: Resize image**
     image = cv2.resize(image, (224, 224))
 
-    # **Step 1: Apply Heavy Gaussian Blur (Suppresses small edges)**
-    blurred = cv2.GaussianBlur(image, (9, 9), 0)  # Stronger blur to remove fine edges
+    # **Step 2: Stronger Gaussian Blur to eliminate thin cracks while keeping crushing**
+    blurred = cv2.GaussianBlur(image, (11, 11), 0)  
 
-    # **Step 2: CLAHE for better contrast in large areas**
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    # **Step 3: CLAHE for contrast enhancement**
+    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
     enhanced = clahe.apply(blurred)
 
-    # **Step 3: Otsu's Thresholding**
-    _, thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # **Step 4: Adaptive Thresholding**
+    crushing = cv2.adaptiveThreshold(
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        cv2.THRESH_BINARY_INV, 21, 8)  # Adjusted parameters
 
-    # **Step 4: Morphological Operations**
+    # **Step 5: Morphological Close to fill broken areas**
     kernel = np.ones((7, 7), np.uint8)
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=3)
 
-    # **Step 5: Remove small areas mistaken for crushing**
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(thresh, connectivity=8)
-    min_area = 3000  # Adjusted for better accuracy
-    filtered_crushing = np.zeros_like(thresh)
+    # **Step 6: Remove small non-crushing areas**
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
+    min_area = 2000  # Increased threshold to reduce misclassification
+    filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
         if stats[i, cv2.CC_STAT_AREA] >= min_area:
             filtered_crushing[labels == i] = 255
 
-    # **Step 6: Contour Filtering - Removes small thin cracks that survived**
-    contours, _ = cv2.findContours(filtered_crushing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
-        perimeter = cv2.arcLength(cnt, True)
-        circularity = 4 * np.pi * (area / (perimeter ** 2 + 1e-5))  # Avoid division by zero
-
-        if circularity < 0.2:  # If the shape is too thin, remove it (likely a crack)
-            cv2.drawContours(filtered_crushing, [cnt], -1, 0, -1)
-
     return filtered_crushing
+
 
 
 def process_damaged_image(image):
