@@ -68,9 +68,13 @@ def detect_cracks(image):
     enhanced = clahe.apply(gray)
     
     # Apply Multi-scale Canny Edge Detection
-    edges1 = cv2.Canny(enhanced, 10, 50)
+    edges1 = cv2.Canny(enhanced, 5, 30)
     edges2 = cv2.Canny(enhanced, 50, 150)
     cracks = cv2.bitwise_or(edges1, edges2)
+    
+    # Use morphological thinning to refine cracks
+    kernel = np.ones((2, 2), np.uint8)
+    cracks = cv2.morphologyEx(cracks, cv2.MORPH_DILATE, kernel)
     
     return cracks
 
@@ -85,14 +89,25 @@ def detect_crushing(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(gray)
     
+    # Apply Gaussian Blur to reduce noise
+    blurred = cv2.GaussianBlur(enhanced, (5,5), 0)
+    
     # Apply Otsu's thresholding
-    _, binary = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
     crushing = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=2)
     
-    return crushing
+    # Filter out small components to retain significant crushing areas
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
+    filtered_crushing = np.zeros_like(crushing)
+    
+    for i in range(1, num_labels):  
+        if stats[i, cv2.CC_STAT_AREA] > 1000:
+            filtered_crushing[labels == i] = 255
+    
+    return filtered_crushing
 
 def process_damaged_image(image):
     """
@@ -112,7 +127,6 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
-
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
