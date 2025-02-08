@@ -55,6 +55,9 @@ def enhance_image_contrast(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     return clahe.apply(image)
 
+import cv2
+import numpy as np
+
 def detect_cracks(image):
     """
     Detects cracking damage as thin black lines.
@@ -77,6 +80,10 @@ def detect_cracks(image):
     edges2 = cv2.Canny(enhanced, 50, 150)
     cracks = cv2.bitwise_or(edges1, edges2)
     
+    # Morphological thinning to refine cracks
+    kernel = np.ones((2, 2), np.uint8)
+    cracks = cv2.morphologyEx(cracks, cv2.MORPH_ERODE, kernel)
+    
     return cracks
 
 def detect_crushing(image):
@@ -96,12 +103,14 @@ def detect_crushing(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(gray)
     
-    # Apply Otsu's thresholding
-    _, binary = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # Apply adaptive thresholding
+    adaptive_thresh = cv2.adaptiveThreshold(
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5
+    )
     
     # Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
-    crushing = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=2)
+    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
     
     return crushing
 
