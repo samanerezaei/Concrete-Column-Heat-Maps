@@ -61,7 +61,7 @@ from PIL import Image
 
 def convert_pil_to_numpy(image):
     """
-    Convert a PIL image to a NumPy array and ensure it's in grayscale format.
+    Convert a PIL image to a NumPy array, ensuring grayscale format.
     """
     if isinstance(image, Image.Image):
         image = np.array(image)
@@ -77,13 +77,16 @@ def detect_cracks(image):
     """
     image = convert_pil_to_numpy(image)
     
+    # Resize to (224, 224) for model consistency
+    image = cv2.resize(image, (224, 224))
+    
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
     # Apply Multi-scale Canny Edge Detection
-    edges1 = cv2.Canny(enhanced, 10, 50)
-    edges2 = cv2.Canny(enhanced, 50, 150)
+    edges1 = cv2.Canny(enhanced, 20, 80)
+    edges2 = cv2.Canny(enhanced, 80, 200)
     cracks = cv2.bitwise_or(edges1, edges2)
     
     # Morphological thinning to refine cracks
@@ -98,24 +101,36 @@ def detect_crushing(image):
     """
     image = convert_pil_to_numpy(image)
     
+    # Resize to (224, 224) for model consistency
+    image = cv2.resize(image, (224, 224))
+    
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
-    # Use adaptive thresholding with a high bias to prevent shadows from being misclassified
+    # Apply adaptive thresholding with a higher bias to prevent shadow misclassification
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 10
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 25, 15
     )
     
-    # Remove small noise using Morphological Operations
+    # **New Step:** Remove small noise using Morphological Operations
     kernel = np.ones((3, 3), np.uint8)
     crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
     
-    # Filter out large shadow-like regions by removing low contrast areas
+    # **New Step:** Filter out large shadow-like regions by removing low-contrast areas
     mean_intensity = np.mean(image)
-    crushing[image > mean_intensity * 0.8] = 255  # Shadows are usually darker, ignore them
+    crushing[image > mean_intensity * 0.85] = 255  # Shadows are usually darker, ignore them
     
-    return crushing
+    # **New Step:** Keep only large connected components (remove small noise)
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
+    filtered_crushing = np.zeros_like(crushing)
+    
+    for i in range(1, num_labels):  
+        area = stats[i, cv2.CC_STAT_AREA]
+        if area > 500:  # **New threshold to eliminate small artifacts**
+            filtered_crushing[labels == i] = 255
+
+    return filtered_crushing
 
 def process_damaged_image(image):
     """
@@ -123,7 +138,7 @@ def process_damaged_image(image):
     """
     image = convert_pil_to_numpy(image)
     
-    # Resize to (224, 224) for consistency
+    # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
     # Detect cracks and crushing
@@ -140,6 +155,7 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
+
 
 
 
