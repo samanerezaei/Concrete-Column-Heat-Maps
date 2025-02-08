@@ -11,7 +11,7 @@ from tensorflow.keras.models import load_model
 from sklearn.mixture import GaussianMixture
 
 # Fixing the download and loading of model files
-@st.cache_resource
+@st.cache(allow_output_mutation=True)
 def load_models(model1_link, model2_link, meta_model_link):
     try:
         # Define the local filenames
