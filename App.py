@@ -73,7 +73,7 @@ def convert_pil_to_numpy(image):
 
 def detect_cracks(image):
     """
-    Improved crack detection: Keeps thin single-pixel cracks without duplication.
+    Improved crack detection: Keeps single-pixel cracks without duplication.
     """
     image = convert_pil_to_numpy(image)
 
@@ -81,23 +81,29 @@ def detect_cracks(image):
     image = cv2.resize(image, (224, 224))
 
     # Apply Gaussian Blur to remove small details
-    blurred = cv2.GaussianBlur(image, (3, 3), 0)  
+    blurred = cv2.GaussianBlur(image, (3, 3), 0)
 
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(blurred)
 
-    # Apply Canny Edge Detection with refined thresholds
-    edges = cv2.Canny(enhanced, 80, 160)  # Lowering upper threshold to remove double edges
+    # Apply Sobel Edge Detection instead of Canny
+    sobelx = cv2.Sobel(enhanced, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(enhanced, cv2.CV_64F, 0, 1, ksize=3)
+    sobel_edges = cv2.magnitude(sobelx, sobely)
+    sobel_edges = np.uint8(sobel_edges)
+
+    # Apply Threshold to keep only strong edges (i.e., cracks)
+    _, cracks = cv2.threshold(sobel_edges, 50, 255, cv2.THRESH_BINARY)
 
     # Apply Morphological Erosion to remove extra edge lines
     kernel = np.ones((1, 1), np.uint8)
-    edges = cv2.morphologyEx(edges, cv2.MORPH_ERODE, kernel, iterations=1)
+    cracks = cv2.morphologyEx(cracks, cv2.MORPH_ERODE, kernel, iterations=1)
 
     # Apply thinning to reduce thickness of cracks to one pixel
-    edges = cv2.ximgproc.thinning(edges)
+    cracks = cv2.ximgproc.thinning(cracks)
 
-    return edges
+    return cracks
 
 def detect_crushing(image):
     """
