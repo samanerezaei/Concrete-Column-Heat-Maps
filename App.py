@@ -57,36 +57,38 @@ def enhance_image_contrast(image):
 
 def detect_cracks(image, column_mask):
     """
-    Enhanced crack detection using multi-scale Canny, adaptive thresholding, 
+    Enhanced crack detection using multi-scale Canny, CLAHE, adaptive thresholding, 
     and morphological processing.
     """
-    # Step 1: Apply Histogram Equalization for better contrast
-    equalized = cv2.equalizeHist(image)
-    
+
+    # Step 1: Apply CLAHE for local contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    equalized = clahe.apply(image)
+
     # Step 2: Multi-scale Canny Edge Detection
-    canny_low = cv2.Canny(equalized, 10, 50)  # Detect fine cracks
+    canny_low = cv2.Canny(equalized, 5, 30)  # Detect fine cracks
     canny_high = cv2.Canny(equalized, 50, 150)  # Detect major cracks
     combined_canny = cv2.bitwise_or(canny_low, canny_high)
-    
+
     # Step 3: Adaptive Thresholding for faint cracks
     adaptive_thresh = cv2.adaptiveThreshold(
-        equalized, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 5
+        equalized, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 3
     )
-    
+
     # Step 4: Merge Adaptive and Canny results
     merged_edges = cv2.bitwise_or(combined_canny, adaptive_thresh)
-    
-    # Step 5: Morphological Thinning (Skeletonization)
+
+    # Step 5: Morphological Processing (Dilate to recover missing cracks)
     kernel = np.ones((2, 2), np.uint8)
-    thinned_cracks = cv2.morphologyEx(merged_edges, cv2.MORPH_ERODE, kernel)
-    
-    # Step 6: Guided Filtering to remove noise but preserve cracks
-    guided = cv2.ximgproc.guidedFilter(equalized, thinned_cracks, radius=5, eps=50)
-    _, refined_cracks = cv2.threshold(guided, 30, 255, cv2.THRESH_BINARY)
-    
+    dilated_cracks = cv2.dilate(merged_edges, kernel, iterations=1)
+
+    # Step 6: Guided Filtering (Denoise while keeping edges)
+    guided = cv2.ximgproc.guidedFilter(equalized, dilated_cracks, radius=5, eps=50)
+    _, refined_cracks = cv2.threshold(guided, 20, 255, cv2.THRESH_BINARY)
+
     # Step 7: Apply column mask
     final_cracks = cv2.bitwise_and(refined_cracks, column_mask)
-    
+
     return final_cracks
 
 
