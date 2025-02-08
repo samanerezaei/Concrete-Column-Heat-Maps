@@ -106,10 +106,10 @@ def detect_crushing(image):
     image = cv2.resize(image, (224, 224))
 
     # Apply Gaussian Blur to remove small details
-    image = cv2.GaussianBlur(image, (5, 5), 0)
+    image = cv2.GaussianBlur(image, (7, 7), 0)
 
     # Apply CLAHE for contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=1.2, tileGridSize=(8, 8))  
+    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))  
     enhanced = clahe.apply(image)
 
     # **Step 1: Adaptive Thresholding (detect potential crushing zones)**
@@ -141,15 +141,15 @@ def detect_crushing(image):
 
     # **Step 6: Remove small false positive areas**
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 2500  # **Increased to avoid false detections**
+    min_area = 3500  # **Increased to avoid false detections**
     filtered_crushing = np.zeros_like(crushing)
     
     for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_area:
+        aspect_ratio = stats[i, cv2.CC_STAT_WIDTH] / max(1, stats[i, cv2.CC_STAT_HEIGHT])  # Avoid division by zero
+        if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 3:
             filtered_crushing[labels == i] = 255
 
     return filtered_crushing
-
 
 def process_damaged_image(image):
     """
