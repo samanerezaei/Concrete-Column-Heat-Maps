@@ -134,6 +134,8 @@ def process_damaged_image(image):
     
     return final_output
 
+
+
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
     
