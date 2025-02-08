@@ -55,121 +55,63 @@ def enhance_image_contrast(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     return clahe.apply(image)
 
-def detect_cracks(image, column_mask):
+
+def detect_cracks(image):
     """
-    Enhanced crack detection using multi-scale Canny, CLAHE, adaptive thresholding, 
-    and morphological processing.
-    """
-
-    # Step 1: Apply CLAHE for local contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    equalized = clahe.apply(image)
-
-    # Step 2: Multi-scale Canny Edge Detection
-    canny_low = cv2.Canny(equalized, 5, 30)  # Detect fine cracks
-    canny_high = cv2.Canny(equalized, 50, 150)  # Detect major cracks
-    combined_canny = cv2.bitwise_or(canny_low, canny_high)
-
-    # Step 3: Adaptive Thresholding for faint cracks
-    adaptive_thresh = cv2.adaptiveThreshold(
-        equalized, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 3
-    )
-
-    # Step 4: Merge Adaptive and Canny results
-    merged_edges = cv2.bitwise_or(combined_canny, adaptive_thresh)
-
-    # Step 5: Morphological Processing (Dilate to recover missing cracks)
-    kernel = np.ones((2, 2), np.uint8)
-    dilated_cracks = cv2.dilate(merged_edges, kernel, iterations=1)
-
-    # Step 6: Guided Filtering (Denoise while keeping edges)
-    guided = cv2.ximgproc.guidedFilter(equalized, dilated_cracks, radius=5, eps=50)
-    _, refined_cracks = cv2.threshold(guided, 20, 255, cv2.THRESH_BINARY)
-
-    # Step 7: Apply column mask
-    final_cracks = cv2.bitwise_and(refined_cracks, column_mask)
-
-    return final_cracks
-
-
-def detect_crushing(image, column_mask):
-    """Final refined crushing detection to eliminate false positives"""
-
-    # Step 1: Apply CLAHE to enhance contrast
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(image)
-
-    # Step 2: Gaussian Mixture Model (GMM) for Initial Thresholding
-    pixels = enhanced.reshape(-1, 1)
-    gmm = GaussianMixture(n_components=2, random_state=42).fit(pixels)
-    labels = gmm.predict(pixels)
-    crushing = labels.reshape(image.shape)
-
-    # Ensure only **very dark regions** are classified as crushing
-    crushing = (crushing == crushing.min()).astype(np.uint8) * 255
-
-    # Step 3: Apply a conservative Otsu's Threshold (less aggressive)
-    _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    
-    # **New Step:** Ensure crushing only appears where Otsu AND GMM agree
-    crushing = cv2.bitwise_and(crushing, otsu_thresh)
-
-    # Step 4: Morphological Closing to Remove Small Noise
-    kernel = np.ones((3, 3), np.uint8)
-    crushing_cleaned = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
-
-    # Step 5: Preserve Only Large Damaged Regions (Avoid Small Dots)
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing_cleaned, connectivity=8)
-    crushing_mask = np.zeros_like(image)
-    
-    for i in range(1, num_labels):  
-        area = stats[i, cv2.CC_STAT_AREA]
-        if area > 1000:  # **New threshold to eliminate small artifacts**
-            crushing_mask[labels == i] = 255
-
-    # Step 6: Apply column mask to ensure correct boundary detection
-    final_crushing = cv2.bitwise_and(crushing_mask, column_mask)
-
-    return final_crushing
-
-
-
-def process_damaged_image(image, target_size=(224, 224)):
-    """
-    Process the image to:
-    - Detect column boundary
-    - Highlight safe zones
-    - Detect cracks and crushing areas
-    - Generate final digitized output
+    Detects cracking damage as thin black lines.
     """
     # Convert to grayscale
-    image_np = np.array(image)
-    gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY) if len(image_np.shape) == 3 else image_np
-
-    # Detect column boundary
-    _, thresholded = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
-    contours, _ = cv2.findContours(thresholded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    column_mask = np.zeros_like(gray)
-    if contours:
-        largest_contour = max(contours, key=cv2.contourArea)
-        cv2.drawContours(column_mask, [largest_contour], -1, 255, thickness=-1)
-
-    # Enhance contrast
-    contrast_enhanced = enhance_image_contrast(gray)
-
-    # Detect cracks and crushing separately
-    cracks_mask = detect_cracks(contrast_enhanced, column_mask)
-    crushing_mask = detect_crushing(contrast_enhanced, column_mask)
-
-    # Final digitized image
-    final_output = np.full_like(gray, 255)  # White background
-    final_output[crushing_mask > 0] = 0  # Crushing in solid black
-    final_output[cracks_mask > 0] = 0  # Cracks as thin black lines
-
-    # Resize for model input
-    final_resized = cv2.resize(final_output, target_size)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
-    return final_resized
+    # Apply CLAHE for contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(gray)
+    
+    # Apply Multi-scale Canny Edge Detection
+    edges1 = cv2.Canny(enhanced, 10, 50)
+    edges2 = cv2.Canny(enhanced, 50, 150)
+    cracks = cv2.bitwise_or(edges1, edges2)
+    
+    return cracks
+
+def detect_crushing(image):
+    """
+    Detects crushing damage as black filled areas.
+    """
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Apply CLAHE for contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(gray)
+    
+    # Apply Otsu's thresholding
+    _, binary = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    
+    # Remove small noise using Morphological Operations
+    kernel = np.ones((3, 3), np.uint8)
+    crushing = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=2)
+    
+    return crushing
+
+def process_damaged_image(image):
+    """
+    Process the image to detect cracking and crushing damages.
+    """
+    # Detect cracks and crushing
+    cracks_mask = detect_cracks(image)
+    crushing_mask = detect_crushing(image)
+    
+    # Create final binary output (white background)
+    final_output = np.full_like(cracks_mask, 255)
+    
+    # Set cracks as thin black lines
+    final_output[cracks_mask > 0] = 0
+    
+    # Set crushing as solid black areas
+    final_output[crushing_mask > 0] = 0
+    
+    return final_output
 
 
 # Streamlit App Section
