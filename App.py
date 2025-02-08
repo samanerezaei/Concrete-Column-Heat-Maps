@@ -57,23 +57,29 @@ def enhance_image_contrast(image):
 
 import cv2
 import numpy as np
+from PIL import Image
+
+def convert_pil_to_numpy(image):
+    """
+    Convert a PIL image to a NumPy array and ensure it's in grayscale format.
+    """
+    if isinstance(image, Image.Image):
+        image = np.array(image)
+    
+    if len(image.shape) == 3:  # Convert RGB to grayscale if necessary
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    
+    return image
 
 def detect_cracks(image):
     """
-    Detects cracking damage as thin black lines.
+    Detect cracking damage as thin black lines.
     """
-    # Ensure image is properly formatted
-    if not isinstance(image, np.ndarray):
-        raise ValueError("Input image is not a valid NumPy array")
-    
-    if len(image.shape) == 2:  # Already grayscale
-        gray = image
-    else:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = convert_pil_to_numpy(image)
     
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(gray)
+    enhanced = clahe.apply(image)
     
     # Apply Multi-scale Canny Edge Detection
     edges1 = cv2.Canny(enhanced, 10, 50)
@@ -88,20 +94,13 @@ def detect_cracks(image):
 
 def detect_crushing(image):
     """
-    Detects crushing damage as black filled areas.
+    Detect crushing damage as black filled areas.
     """
-    # Ensure image is properly formatted
-    if not isinstance(image, np.ndarray):
-        raise ValueError("Input image is not a valid NumPy array")
-    
-    if len(image.shape) == 2:  # Already grayscale
-        gray = image
-    else:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    image = convert_pil_to_numpy(image)
     
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(gray)
+    enhanced = clahe.apply(image)
     
     # Apply adaptive thresholding
     adaptive_thresh = cv2.adaptiveThreshold(
@@ -118,9 +117,7 @@ def process_damaged_image(image):
     """
     Process the image to detect cracking and crushing damages.
     """
-    # Ensure input is a valid image
-    if not isinstance(image, np.ndarray):
-        raise ValueError("Invalid image format. Expected a NumPy array.")
+    image = convert_pil_to_numpy(image)
     
     # Detect cracks and crushing
     cracks_mask = detect_cracks(image)
