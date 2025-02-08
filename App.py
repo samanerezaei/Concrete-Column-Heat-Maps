@@ -125,12 +125,12 @@ def detect_crushing(image):
     image = cv2.GaussianBlur(image, (7, 7), 0)
 
     # Apply CLAHE for contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))  # Reduced contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=1.8, tileGridSize=(8, 8))  # Adjusted to enhance small details more
     enhanced = clahe.apply(image)
 
     # Step 1: Adaptive Thresholding (detect potential crushing zones)
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 5
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 5  # Tighter block size for better detail
     )
 
     # Step 2: Otsu's Thresholding (refine crushing zones)
@@ -153,11 +153,11 @@ def detect_crushing(image):
 
     # Step 5: Morphological Closing to refine crushing areas
     kernel = np.ones((5, 5), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=3)  # Increased iterations for cleaner output
 
     # Step 6: Remove small false positive areas
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 3500  # Increased to avoid false detections
+    min_area = 1500  # Reduced the area to catch smaller crushing zones
     filtered_crushing = np.zeros_like(crushing)
     
     for i in range(1, num_labels):
