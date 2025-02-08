@@ -114,54 +114,34 @@ from PIL import Image
 
 def detect_crushing(image):
     """
-    Detect crushing damage as black filled areas while avoiding misclassification of cracks.
+    Detect crushing as solid black areas with noise filtering.
     """
     image = convert_pil_to_numpy(image)
-
-    # Resize image for consistency
     image = cv2.resize(image, (224, 224))
 
-    # Apply Gaussian Blur to remove small details
+    # Apply Gaussian blur to remove small noise
     image = cv2.GaussianBlur(image, (7, 7), 0)
 
-    # Apply CLAHE for contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=1.8, tileGridSize=(8, 8))  # Adjusted to enhance small details more
+    # CLAHE for contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))  
     enhanced = clahe.apply(image)
 
-    # Step 1: Adaptive Thresholding (detect potential crushing zones)
+    # Adaptive thresholding to identify potential crushing areas
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 5  # Tighter block size for better detail
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 5
     )
 
-    # Step 2: Otsu's Thresholding (refine crushing zones)
-    _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-
-    # Combine both thresholds
-    crushing = cv2.bitwise_and(adaptive_thresh, otsu_thresh)
-
-    # Step 3: Edge Detection using Sobel to find cracks
-    sobelx = cv2.Sobel(enhanced, cv2.CV_64F, 1, 0, ksize=3)
-    sobely = cv2.Sobel(enhanced, cv2.CV_64F, 0, 1, ksize=3)
-    sobel_edges = cv2.magnitude(sobelx, sobely)
-    sobel_edges = np.uint8(sobel_edges)
-
-    # Thresholding to keep only strong edges (i.e., cracks)
-    _, sobel_mask = cv2.threshold(sobel_edges, 50, 255, cv2.THRESH_BINARY)
-
-    # Step 4: Remove cracks from crushing mask
-    crushing = cv2.bitwise_and(crushing, cv2.bitwise_not(sobel_mask))
-
-    # Step 5: Morphological Closing to refine crushing areas
+    # Apply morphological closing to refine crushing areas
     kernel = np.ones((5, 5), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=3)  # Increased iterations for cleaner output
+    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # Step 6: Remove small false positive areas
+    # Remove small regions that are mistakenly classified
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 1500  # Reduced the area to catch smaller crushing zones
+    min_area = 2000  # Minimum area for crushing detection
     filtered_crushing = np.zeros_like(crushing)
     
     for i in range(1, num_labels):
-        aspect_ratio = stats[i, cv2.CC_STAT_WIDTH] / max(1, stats[i, cv2.CC_STAT_HEIGHT])  # Avoid division by zero
+        aspect_ratio = stats[i, cv2.CC_STAT_WIDTH] / max(1, stats[i, cv2.CC_STAT_HEIGHT])
         if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 3:
             filtered_crushing[labels == i] = 255
 
