@@ -61,7 +61,7 @@ from PIL import Image
 
 def convert_pil_to_numpy(image):
     """
-    Convert a PIL image to a NumPy array, ensuring grayscale format.
+    Convert a PIL image to a NumPy array and ensure it's in grayscale format.
     """
     if isinstance(image, Image.Image):
         image = np.array(image)
@@ -77,16 +77,13 @@ def detect_cracks(image):
     """
     image = convert_pil_to_numpy(image)
     
-    # Resize to (224, 224) for model consistency
-    image = cv2.resize(image, (224, 224))
-    
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(image)
     
     # Apply Multi-scale Canny Edge Detection
-    edges1 = cv2.Canny(enhanced, 20, 80)
-    edges2 = cv2.Canny(enhanced, 80, 200)
+    edges1 = cv2.Canny(enhanced, 10, 50)
+    edges2 = cv2.Canny(enhanced, 50, 150)
     cracks = cv2.bitwise_or(edges1, edges2)
     
     # Morphological thinning to refine cracks
@@ -100,9 +97,6 @@ def detect_crushing(image):
     Detect crushing damage as black filled areas while avoiding shadow misclassification.
     """
     image = convert_pil_to_numpy(image)
-    
-    # Resize to (224, 224) for model consistency
-    image = cv2.resize(image, (224, 224))
     
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
@@ -129,7 +123,7 @@ def process_damaged_image(image):
     """
     image = convert_pil_to_numpy(image)
     
-    # Resize to (224, 224) for model consistency
+    # Resize to (224, 224) for consistency
     image = cv2.resize(image, (224, 224))
     
     # Detect cracks and crushing
@@ -146,6 +140,7 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
+
 
 
 # Streamlit App Section
