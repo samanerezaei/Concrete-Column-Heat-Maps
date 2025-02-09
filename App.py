@@ -184,10 +184,14 @@ def process_damaged_image(image):
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
 
-    cracks_mask = 255 - cracks_mask
-    crushing_mask = 255 - crushing_mask
+    final_output = np.ones_like(image) * 255 
     
-    return cracks_mask, crushing_mask
+    final_output[cracks_mask > 0] = 0
+    
+    final_output[crushing_mask > 0] = 0
+
+    return final_output
+
 
 
 # Streamlit App Section
