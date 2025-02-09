@@ -55,6 +55,7 @@ def enhance_image_contrast(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     return clahe.apply(image)
 
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -106,9 +107,9 @@ def detect_cracks(image):
     # Thinning: Reduce the thickness of cracks
     thin_cracks = cv2.ximgproc.thinning(filtered_cracks)
 
-    # Ensure cracks are black (0) and background is white (255)
-    cracks_output = np.full_like(thin_cracks, 255)
-    cracks_output[thin_cracks > 0] = 0
+    # 🔹 تضمین اینکه ترک‌ها مشکی (0) و پس‌زمینه سفید (255) باشند
+    cracks_output = np.full_like(thin_cracks, 255)  # ایجاد پس‌زمینه سفید
+    cracks_output[thin_cracks > 0] = 0  # ترک‌ها مشکی
 
     return cracks_output
 
@@ -122,39 +123,45 @@ def detect_crushing(image):
     image = cv2.resize(image, (224, 224))
 
     # Apply Gaussian Blur to remove small artifacts
-    blurred = cv2.GaussianBlur(image, (7, 7), 0)
+    blurred = cv2.GaussianBlur(image, (5, 5), 0)
 
     # Apply CLAHE to enhance contrast while preserving details
-    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(blurred)
 
-    # Apply adaptive thresholding for initial crushing detection
+    # Apply adaptive thresholding for primary crushing mask
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 35, 5
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 41, 5
     )
 
-    # Apply Otsu’s thresholding to refine crushing detection
+    # Apply Otsu’s thresholding to refine crushing mask
     _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # Combine both masks
+    # Combine both masks for robust detection
     crushing = cv2.bitwise_and(adaptive_thresh, otsu_thresh)
 
-    # Remove thin edges (to eliminate cracks)
+    # Remove thin cracks from crushing mask
     kernel = np.ones((3, 3), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_OPEN, kernel, iterations=1)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # Remove false detections based on area filtering
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 2000  # Adjust this value to better detect crushing
-    filtered_crushing = np.zeros_like(crushing)
+    # Apply edge detection to identify cracks
+    edges = cv2.Canny(enhanced, 80, 180)
     
+    # Remove detected cracks from crushing mask
+    crushing[edges > 0] = 0  
+
+    # Remove small areas that might be noise
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
+    min_area = 2500  # Only large connected areas should be detected as crushing
+    filtered_crushing = np.zeros_like(crushing)
+
     for i in range(1, num_labels):
         width = stats[i, cv2.CC_STAT_WIDTH]
         height = stats[i, cv2.CC_STAT_HEIGHT]
         aspect_ratio = width / max(1, height)
 
-        # Apply size filtering (must be large enough) and aspect ratio filtering (not too narrow)
-        if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 3:
+        # Keep only large connected areas (crushing zones)
+        if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 2:
             filtered_crushing[labels == i] = 255
 
     # Ensure crushing is black (0) and background is white (255)
@@ -162,7 +169,6 @@ def detect_crushing(image):
     crushing_output[filtered_crushing > 0] = 0  # Crushing areas black
 
     return crushing_output
-
 
 def process_damaged_image(image):
     """
@@ -178,7 +184,6 @@ def process_damaged_image(image):
     crushing_mask = detect_crushing(image)
 
     return cracks_mask, crushing_mask
-
 
 
 # Streamlit App Section
