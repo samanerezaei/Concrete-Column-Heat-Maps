@@ -385,11 +385,17 @@ elif section == 'Prediction':
     if uploaded_image is not None:
         img = Image.open(uploaded_image)
     
-        # Process the image
-        binary_img = process_damaged_image(img)
-    
+        # Process the image    
         # Convert single-channel binary image to three channels
+        cracks_mask, crushing_mask = process_damaged_image(img)
+
+        binary_img = np.maximum(cracks_mask, crushing_mask)
+        
+        if binary_img is None or binary_img.size == 0:
+            raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
+        
         binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
+
     
         # Expand dimensions to match model input
         binary_img = np.expand_dims(binary_img, axis=0)  # Add batch dimension
