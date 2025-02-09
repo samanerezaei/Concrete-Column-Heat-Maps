@@ -132,6 +132,10 @@ def detect_crushing(image):
     kernel = np.ones((5, 5), np.uint8)
     crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
     
+    # Exclude top portion to remove shadows
+    height = crushing.shape[0]
+    crushing[:int(height * 0.2), :] = 0  # Removing top 20% of the image to avoid shadows
+    
     # Remove false positive cracks using edge detection
     edges = cv2.Canny(enhanced, 50, 150)
     crushing[edges > 0] = 0
