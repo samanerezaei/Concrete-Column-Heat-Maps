@@ -114,37 +114,35 @@ from PIL import Image
 
 def detect_crushing(image):
     """
-    Detect crushing damage as black filled areas while avoiding misclassification of cracks.
+    Detect crushing as solid black areas with noise filtering.
     """
     image = convert_pil_to_numpy(image)
-    
-    # Resize image to standard size (224, 224) for consistency
     image = cv2.resize(image, (224, 224))
 
-    # Step 1: Apply Gaussian blur to reduce noise
+    # Apply Gaussian blur to remove small noise
     image = cv2.GaussianBlur(image, (7, 7), 0)
 
-    # Step 2: Apply CLAHE for contrast enhancement (optional step)
-    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
+    # CLAHE for contrast enhancement
+    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))  
     enhanced = clahe.apply(image)
 
-    # Step 3: Apply adaptive thresholding to highlight potential crushing zones
-    crushing = cv2.adaptiveThreshold(enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                     cv2.THRESH_BINARY_INV, 31, 10)
-    
-    # Step 4: Perform morphological closing to fill small holes and gaps
-    kernel = np.ones((5, 5), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
+    # Adaptive thresholding to identify potential crushing areas
+    adaptive_thresh = cv2.adaptiveThreshold(
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 5
+    )
 
-    # Step 5: Use connected components to find areas with large enough areas
+    # Apply morphological closing to refine crushing areas
+    kernel = np.ones((5, 5), np.uint8)
+    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+    # Remove small regions that are mistakenly classified
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    
-    min_area = 500  # Minimum area for crushing detection
+    min_area = 2000  # Minimum area for crushing detection
     filtered_crushing = np.zeros_like(crushing)
     
-    # Step 6: Filter out smaller connected components that are not likely to be crushing
     for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_area:
+        aspect_ratio = stats[i, cv2.CC_STAT_WIDTH] / max(1, stats[i, cv2.CC_STAT_HEIGHT])
+        if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 3:
             filtered_crushing[labels == i] = 255
 
     return filtered_crushing
