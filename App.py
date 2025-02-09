@@ -184,14 +184,11 @@ def process_damaged_image(image):
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
 
-    final_output = np.ones_like(image) * 255 
-    
-    final_output[cracks_mask > 0] = 0
-    
-    final_output[crushing_mask > 0] = 0
+    # تبدیل ماسک‌ها به فرمت صحیح (پس‌زمینه سفید، ترک و خردشدگی مشکی)
+    cracks_mask = 255 - cracks_mask  # معکوس کردن رنگ برای ترک‌ها (پس‌زمینه سفید، ترک مشکی)
+    crushing_mask = 255 - crushing_mask  # معکوس کردن رنگ برای خردشدگی‌ها (پس‌زمینه سفید، خردشدگی مشکی)
 
-    return final_output
-
+    return cracks_mask, crushing_mask
 
 
 # Streamlit App Section
