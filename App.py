@@ -386,9 +386,10 @@ elif section == 'Prediction':
     
         # Process the image    
         # Convert single-channel binary image to three channels
-        cracks_mask, crushing_mask = process_damaged_image(img)
+        cracks_mask  = process_damaged_image(img)
+        #, crushing_mask
 
-        binary_img = np.maximum(cracks_mask, crushing_mask)
+        binary_img = np.maximum(cracks_mask)#, crushing_mask)
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
