@@ -397,11 +397,22 @@ elif section == 'Prediction':
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
         
-        binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
-
-    
-        # Expand dimensions to match model input
-        binary_img = np.expand_dims(binary_img, axis=0)  # Add batch dimension
+        # Resize the image to the model's required input size
+        binary_img = cv2.resize(binary_img, (224, 224), interpolation=cv2.INTER_CUBIC)
+        
+        # Ensure the image has a single grayscale channel
+        if len(binary_img.shape) == 2:
+            binary_img = np.expand_dims(binary_img, axis=-1)  # Convert (224, 224) → (224, 224, 1)
+        
+        # If the model requires RGB input, repeat the grayscale channel to create a 3-channel image
+        if binary_img.shape[-1] == 1:
+            binary_img = np.repeat(binary_img, 3, axis=-1)  # Convert (224, 224, 1) to (224, 224, 3)
+        
+        # Add a batch dimension for TensorFlow model input
+        binary_img = np.expand_dims(binary_img, axis=0)  # Convert (224, 224, 3) → (1, 224, 224, 3)
+        
+        # Normalize pixel values to the range [0, 1]
+        binary_img = binary_img.astype(np.float32) / 255.0
     
         # Expand aspect to match batch dimension
         aspect_array = np.expand_dims([aspect], axis=0)
