@@ -126,8 +126,8 @@ def detect_crushing(image):
     # Resize for consistency
     image = cv2.resize(image, (224, 224))
 
-    # Apply Gaussian Blur to remove small artifacts
-    blurred = cv2.GaussianBlur(image, (5, 5), 0)
+    # Apply a stronger Gaussian Blur to smoothen the crushing areas
+    blurred = cv2.GaussianBlur(image, (11, 11), 0)
 
     # Apply CLAHE to enhance contrast while preserving details
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
@@ -135,7 +135,7 @@ def detect_crushing(image):
 
     # Adaptive Thresholding for primary crushing mask
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 31, 10
+        enhanced, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 51, 2
     )
 
     # Otsu’s Thresholding to refine crushing detection
@@ -150,7 +150,7 @@ def detect_crushing(image):
 
     # Remove small detected areas
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 3500  # Minimum area for crushing detection (slightly increased)
+    min_area = 1000  # Reduced from 3500 to 1000 to detect smaller crushing zones
     filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
@@ -168,7 +168,6 @@ def detect_crushing(image):
 
     return crushing_output
 
-
 def process_damaged_image(image):
     """
     Process the image to detect cracking and crushing damages separately.
@@ -180,9 +179,9 @@ def process_damaged_image(image):
     
     # Detect cracks and crushing separately
     cracks_mask = detect_cracks(image)
-    #crushing_mask = detect_crushing(image)
+    crushing_mask = detect_crushing(image)
 
-    return cracks_mask#, crushing_mask
+    return cracks_mask, crushing_mask
 
 
 # Streamlit App Section
@@ -386,12 +385,10 @@ elif section == 'Prediction':
     
         # Process the image    
         # Convert single-channel binary image to three channels
-        #cracks_mask, crushing_mask = process_damaged_image(img)
-        cracks_mask = process_damaged_image(img)
+        cracks_mask, crushing_mask = process_damaged_image(img)
 
-        #binary_img = np.maximum(cracks_mask, crushing_mask)
-        binary_img = cracks_mask  # چون فقط ترک‌ها رو تست می‌کنیم
-
+        binary_img = np.maximum(cracks_mask, crushing_mask)
+        
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
         
