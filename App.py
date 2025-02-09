@@ -180,9 +180,9 @@ def process_damaged_image(image):
     
     # Detect cracks and crushing separately
     cracks_mask = detect_cracks(image)
-    crushing_mask = detect_crushing(image)
+    #crushing_mask = detect_crushing(image)
 
-    return cracks_mask, crushing_mask
+    return cracks_mask#, crushing_mask
 
 
 # Streamlit App Section
