@@ -71,9 +71,46 @@ def convert_pil_to_numpy(image):
     
     return image
 
+def detect_cracks(image):
+    """
+    Detect cracks as thin black lines while avoiding noise.
+    """
+    image = convert_pil_to_numpy(image)
+
+    # Resize for consistency
+    image = cv2.resize(image, (224, 224))
+
+    # Apply Gaussian Blur for noise reduction
+    blurred = cv2.GaussianBlur(image, (3, 3), 0)
+
+    # Apply CLAHE to enhance contrast
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(blurred)
+
+    # Apply Canny Edge Detection for cracks
+    edges = cv2.Canny(enhanced, 80, 180)
+
+    # Apply Morphological Closing (filling small gaps)
+    kernel = np.ones((1, 1), np.uint8)
+    cracks = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=1)
+
+    # Remove small noise using Connected Components Analysis
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cracks, connectivity=8)
+    min_area = 50  # Minimum area to remove small noise
+    filtered_cracks = np.zeros_like(cracks)
+
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] >= min_area:
+            filtered_cracks[labels == i] = 255
+
+    # Thinning: Reduce the thickness of cracks
+    thin_cracks = cv2.ximgproc.thinning(filtered_cracks)
+
+    return thin_cracks
+
 def detect_crushing(image):
     """
-    Detect crushing damage as solid black areas while avoiding misclassification of cracks or shadows.
+    Detect crushing damage as solid black areas while avoiding misclassification of cracks.
     """
     image = convert_pil_to_numpy(image)
 
@@ -89,7 +126,7 @@ def detect_crushing(image):
 
     # Step 1: Apply Adaptive Thresholding for primary mask
     adaptive_thresh = cv2.adaptiveThreshold(
-        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 5
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 41, 10  # تنظیم حساسیت
     )
 
     # Step 2: Apply Otsu’s Thresholding to refine crushing detection
@@ -98,31 +135,27 @@ def detect_crushing(image):
     # Combine both masks
     crushing = cv2.bitwise_and(adaptive_thresh, otsu_thresh)
 
-    # Step 3: Remove thin edges (to eliminate cracks)
-    kernel = np.ones((3, 3), np.uint8)
-    thickened = cv2.dilate(crushing, kernel, iterations=2)
-
-    # Step 4: Remove false detections by filtering based on intensity (shadows)
+    # Step 3: Remove false detections using intensity filter
     mean_intensity = np.mean(image)
-    crushing[image > mean_intensity - 30] = 0  # حذف نواحی با شدت روشنایی بالا
+    crushing[image > mean_intensity - 50] = 0  # جلوگیری از گرفتن سایه به عنوان خردشدگی
 
-    # Step 5: Morphological Closing to refine crushing areas
-    kernel = np.ones((5, 5), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
+    # Step 4: Morphological Closing to refine crushing areas
+    kernel = np.ones((3, 3), np.uint8)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=1)
 
-    # Step 6: Remove cracks using Edge Detection (Sobel to detect fine edges)
+    # Step 5: Detect and remove cracks using Edge Detection
     sobelx = cv2.Sobel(enhanced, cv2.CV_64F, 1, 0, ksize=3)
     sobely = cv2.Sobel(enhanced, cv2.CV_64F, 0, 1, ksize=3)
     sobel_edges = cv2.magnitude(sobelx, sobely)
     sobel_edges = np.uint8(sobel_edges)
 
-    # Apply a threshold to get crack areas
-    _, sobel_mask = cv2.threshold(sobel_edges, 50, 255, cv2.THRESH_BINARY)
+    # Thresholding to detect only strong edges (weaker edges ignored)
+    _, sobel_mask = cv2.threshold(sobel_edges, 80, 255, cv2.THRESH_BINARY)
 
     # Remove cracks from crushing mask
     crushing = cv2.bitwise_and(crushing, cv2.bitwise_not(sobel_mask))
 
-    # Step 7: Filter out small areas that might be cracks
+    # Step 6: Remove small areas that might be cracks
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
     min_area = 2500  # Minimum area for crushing detection
     filtered_crushing = np.zeros_like(crushing)
@@ -147,10 +180,11 @@ def process_damaged_image(image):
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
-    # Detect crushing separately
+    # Detect cracks and crushing separately
+    cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
     
-    return crushing_mask
+    return cracks_mask, crushing_mask
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
