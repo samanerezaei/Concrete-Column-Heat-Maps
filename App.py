@@ -73,12 +73,12 @@ def convert_pil_to_numpy(image):
 
 def detect_cracks(image):
     """
-    Detect cracking damage with reduced thickness and ensure cracks are black (0).
+    Detect cracking damage with improved resolution and ensure cracks are black (0).
     """
     image = convert_pil_to_numpy(image)
 
-    # Resize image for consistency
-    image = cv2.resize(image, (224, 224))
+    # 🔹 افزایش رزولوشن ورودی برای دقت بهتر
+    image = cv2.resize(image, (512, 512), interpolation=cv2.INTER_CUBIC)
 
     # Apply Gaussian Blur for noise reduction
     denoised = cv2.GaussianBlur(image, (3, 3), 0)
@@ -96,7 +96,7 @@ def detect_cracks(image):
 
     # Remove small noise using Connected Components Analysis
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cracks, connectivity=8)
-    min_area = 50  # Minimum area to remove small noise
+    min_area = 100  # افزایش مقدار بهبود کیفیت
     filtered_cracks = np.zeros_like(cracks)
 
     for i in range(1, num_labels):
@@ -106,20 +106,20 @@ def detect_cracks(image):
     # Thinning: Reduce the thickness of cracks
     thin_cracks = cv2.ximgproc.thinning(filtered_cracks)
 
-    # 🔹 تضمین اینکه ترک‌ها مشکی (0) و پس‌زمینه سفید (255) باشند
-    cracks_output = np.full_like(thin_cracks, 255)  # ایجاد پس‌زمینه سفید
-    cracks_output[thin_cracks > 0] = 0  # ترک‌ها مشکی
+    # 🔹 خروجی با کیفیت بالاتر (512x512) و پیکسل‌های آسیب‌دیده مشکی
+    cracks_output = np.full_like(thin_cracks, 255)
+    cracks_output[thin_cracks > 0] = 0
 
     return cracks_output
 
 def detect_crushing(image):
     """
-    Detect crushing damage as solid black areas while avoiding misclassification of cracks.
+    Detect crushing damage with improved resolution and avoid misclassification of cracks.
     """
     image = convert_pil_to_numpy(image)
 
-    # Resize for consistency
-    image = cv2.resize(image, (224, 224))
+    # 🔹 افزایش رزولوشن ورودی
+    image = cv2.resize(image, (512, 512), interpolation=cv2.INTER_CUBIC)
 
     # Apply Gaussian Blur to remove small artifacts
     blurred = cv2.GaussianBlur(image, (7, 7), 0)
@@ -145,7 +145,7 @@ def detect_crushing(image):
 
     # Step 4: Remove false detections by filtering based on intensity
     mean_intensity = np.mean(image)
-    crushing[image > mean_intensity - 30] = 0  # Remove bright regions that were misclassified
+    crushing[image > mean_intensity - 30] = 0
 
     # Step 5: Morphological Closing to refine crushing areas
     kernel = np.ones((5, 5), np.uint8)
@@ -153,11 +153,11 @@ def detect_crushing(image):
 
     # Step 6: Remove cracks using Edge Detection
     edges = cv2.Canny(enhanced, 50, 150)
-    crushing[edges > 0] = 0  # Remove detected cracks from crushing mask
+    crushing[edges > 0] = 0
 
     # Step 7: Filter out small areas that might be cracks
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 2500  # Minimum area for crushing detection
+    min_area = 2500
     filtered_crushing = np.zeros_like(crushing)
     
     for i in range(1, num_labels):
@@ -165,13 +165,12 @@ def detect_crushing(image):
         height = stats[i, cv2.CC_STAT_HEIGHT]
         aspect_ratio = width / max(1, height)
 
-        # Apply size filtering (must be large enough) and aspect ratio filtering (not too narrow)
         if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 2:
             filtered_crushing[labels == i] = 255
 
-    # 🔹 تضمین اینکه خردشدگی‌ها مشکی (0) و پس‌زمینه سفید (255) باشند
-    crushing_output = np.full_like(filtered_crushing, 255)  # ایجاد پس‌زمینه سفید
-    crushing_output[filtered_crushing > 0] = 0  # خردشدگی‌ها مشکی
+    # 🔹 خروجی با کیفیت بالاتر و پیکسل‌های آسیب‌دیده مشکی
+    crushing_output = np.full_like(filtered_crushing, 255)
+    crushing_output[filtered_crushing > 0] = 0
 
     return crushing_output
 
@@ -181,15 +180,14 @@ def process_damaged_image(image):
     """
     image = convert_pil_to_numpy(image)
     
-    # Resize to (224, 224) for model consistency
-    image = cv2.resize(image, (224, 224))
+    # Resize to (512, 512) for improved quality
+    image = cv2.resize(image, (512, 512), interpolation=cv2.INTER_CUBIC)
     
     # Detect cracks and crushing separately
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
 
     return cracks_mask, crushing_mask
-
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
