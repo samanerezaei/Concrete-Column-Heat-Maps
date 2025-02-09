@@ -125,35 +125,44 @@ def detect_crushing(image):
     blurred = cv2.GaussianBlur(image, (7, 7), 0)
 
     # Apply CLAHE to enhance contrast while preserving details
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
     enhanced = clahe.apply(blurred)
 
-    # Apply thresholding to detect dark areas representing crushing
-    _, crushing = cv2.threshold(enhanced, 50, 255, cv2.THRESH_BINARY_INV)
+    # Apply adaptive thresholding for initial crushing detection
+    adaptive_thresh = cv2.adaptiveThreshold(
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 35, 5
+    )
 
-    # Morphological closing to fill small holes in crushing areas
-    kernel = np.ones((7, 7), np.uint8)
-    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=3)
+    # Apply Otsu’s thresholding to refine crushing detection
+    _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # Remove small components that are likely not crushing
+    # Combine both masks
+    crushing = cv2.bitwise_and(adaptive_thresh, otsu_thresh)
+
+    # Remove thin edges (to eliminate cracks)
+    kernel = np.ones((3, 3), np.uint8)
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    # Remove false detections based on area filtering
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 4000  # Minimum area for crushing detection
+    min_area = 2000  # Adjust this value to better detect crushing
     filtered_crushing = np.zeros_like(crushing)
     
     for i in range(1, num_labels):
         width = stats[i, cv2.CC_STAT_WIDTH]
         height = stats[i, cv2.CC_STAT_HEIGHT]
         aspect_ratio = width / max(1, height)
-        
-        # Apply size filtering and aspect ratio filtering (must be large enough and not too narrow)
+
+        # Apply size filtering (must be large enough) and aspect ratio filtering (not too narrow)
         if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 3:
             filtered_crushing[labels == i] = 255
 
     # Ensure crushing is black (0) and background is white (255)
     crushing_output = np.full_like(filtered_crushing, 255)
-    crushing_output[filtered_crushing > 0] = 0
+    crushing_output[filtered_crushing > 0] = 0  # Crushing areas black
 
     return crushing_output
+
 
 def process_damaged_image(image):
     """
