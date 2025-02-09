@@ -386,15 +386,16 @@ elif section == 'Prediction':
     
         # Process the image    
         # Convert single-channel binary image to three channels
-        cracks_mask, crushing_mask = process_damaged_image(img)
+        #cracks_mask, crushing_mask = process_damaged_image(img)
+        cracks_mask = process_damaged_image(img)
 
         binary_img = np.maximum(cracks_mask, crushing_mask)
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
         
-        binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
-
+        #binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
+        binary_img = cracks_mask  # چون فقط ترک‌ها رو تست می‌کنیم
     
         # Expand dimensions to match model input
         binary_img = np.expand_dims(binary_img, axis=0)  # Add batch dimension
