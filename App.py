@@ -165,7 +165,7 @@ def process_damaged_image(image):
     
     # Create final binary output (white background)
     final_output = np.full_like(cracks_mask, 255)
-    final_output = np.full_like(crushing_mask, 255)
+    #final_output = np.full_like(crushing_mask, 255)
     
     # Set cracks as thin black lines
     final_output[cracks_mask > 0] = 0
