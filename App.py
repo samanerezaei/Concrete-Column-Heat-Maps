@@ -184,11 +184,16 @@ def process_damaged_image(image):
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
 
-    # تبدیل ماسک‌ها به فرمت صحیح (پس‌زمینه سفید، ترک و خردشدگی مشکی)
-    cracks_mask = 255 - cracks_mask  # معکوس کردن رنگ برای ترک‌ها (پس‌زمینه سفید، ترک مشکی)
-    crushing_mask = 255 - crushing_mask  # معکوس کردن رنگ برای خردشدگی‌ها (پس‌زمینه سفید، خردشدگی مشکی)
+    # تضمین اینکه پس‌زمینه سفید و ترک‌ها مشکی باشند
+    cracks_mask[cracks_mask > 0] = 0  # ترک‌ها مشکی (0)
+    cracks_mask[cracks_mask == 0] = 255  # پس‌زمینه سفید (255)
+
+    # تضمین اینکه پس‌زمینه سفید و خردشدگی‌ها مشکی باشند
+    crushing_mask[crushing_mask > 0] = 0  # خردشدگی‌ها مشکی (0)
+    crushing_mask[crushing_mask == 0] = 255  # پس‌زمینه سفید (255)
 
     return cracks_mask, crushing_mask
+
 
 
 # Streamlit App Section
