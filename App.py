@@ -129,16 +129,31 @@ def detect_crushing(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(blurred)
 
-    # Step 1: Use Global Thresholding to detect dark regions (crushing zones)
-    _, crushing_mask = cv2.threshold(enhanced, 60, 255, cv2.THRESH_BINARY_INV)
+    # Step 1: K-Means Clustering to segment the image into regions
+    Z = enhanced.reshape((-1, 1))  # Convert image to a 1D array
+    Z = np.float32(Z)
 
-    # Step 2: Remove small noise and enhance the solid regions
+    # Define criteria and apply K-Means
+    K = 3  # Number of clusters (3 intensity levels: Background, cracks, crushing)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    _, labels, centers = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+    # Convert centers to integer values
+    centers = np.uint8(centers)
+    segmented_image = centers[labels.flatten()]
+    segmented_image = segmented_image.reshape(enhanced.shape)
+
+    # Step 2: Threshold to extract the darkest cluster (crushing)
+    min_intensity = np.min(centers)  # The darkest cluster (crushing zones)
+    _, crushing_mask = cv2.threshold(segmented_image, min_intensity + 10, 255, cv2.THRESH_BINARY_INV)
+
+    # Step 3: Morphological operations to clean the mask
     kernel = np.ones((7, 7), np.uint8)
     crushing_mask = cv2.morphologyEx(crushing_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # Step 3: Filter out small components (to remove cracks)
+    # Step 4: Remove small components (to remove noise)
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing_mask, connectivity=8)
-    min_area = 2500  # Adjust the minimum area to detect larger damage zones
+    min_area = 1500  # Adjust the minimum area threshold
     filtered_crushing = np.zeros_like(crushing_mask)
 
     for i in range(1, num_labels):
@@ -146,7 +161,7 @@ def detect_crushing(image):
         height = stats[i, cv2.CC_STAT_HEIGHT]
         aspect_ratio = width / max(1, height)
 
-        # Keep only large connected areas that are likely crushing zones
+        # Keep only large connected areas (crushing zones)
         if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 3:
             filtered_crushing[labels == i] = 255
 
