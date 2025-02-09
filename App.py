@@ -110,40 +110,57 @@ def detect_cracks(image):
 
 def detect_crushing(image):
     """
-    Detect crushing damage as black filled areas while avoiding shadow misclassification.
+    Detect crushing damage as solid black areas while avoiding misclassification of cracks.
     """
     image = convert_pil_to_numpy(image)
-    
-    # Resize to (224, 224) for model consistency
+
+    # Resize for consistency
     image = cv2.resize(image, (224, 224))
-    
-    # Apply Gaussian Blur to smooth out small noise
-    image = cv2.GaussianBlur(image, (7, 7), 0)
-    
-    # Apply CLAHE for contrast enhancement
+
+    # Apply Gaussian Blur to remove small artifacts
+    blurred = cv2.GaussianBlur(image, (7, 7), 0)
+
+    # Apply CLAHE to enhance contrast while preserving details
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(image)
-    
-    # Use Adaptive Thresholding for initial segmentation
-    adaptive_thresh = cv2.adaptiveThreshold(enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                            cv2.THRESH_BINARY_INV, 41, 5)
-    
-    # Remove small noise using Morphological Operations
+    enhanced = clahe.apply(blurred)
+
+    # Step 1: Apply Adaptive Thresholding for primary mask
+    adaptive_thresh = cv2.adaptiveThreshold(
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 5
+    )
+
+    # Step 2: Apply Otsu’s Thresholding to refine crushing detection
+    _, otsu_thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    # Combine both masks
+    crushing = cv2.bitwise_and(adaptive_thresh, otsu_thresh)
+
+    # Step 3: Remove thin edges (to eliminate cracks)
+    kernel = np.ones((3, 3), np.uint8)
+    thickened = cv2.dilate(crushing, kernel, iterations=2)  # Increase thickness to remove small cracks
+
+    # Step 4: Remove false detections by filtering based on intensity
+    mean_intensity = np.mean(image)  # Get global intensity of the image
+    crushing[image > mean_intensity - 30] = 0  # Remove bright regions that were misclassified
+
+    # Step 5: Morphological Closing to refine crushing areas
     kernel = np.ones((5, 5), np.uint8)
-    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
-    
-    # Remove false positive cracks using edge detection
-    edges = cv2.Canny(enhanced, 50, 150)
-    crushing[edges > 0] = 0
-    
-    # Remove small objects mistakenly classified as crushing
+    crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+    # Step 6: Filter out small areas that might be cracks
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 1000  # Minimum area for crushing detection
+    min_area = 2500  # Increase to avoid misclassification of cracks as crushing
     filtered_crushing = np.zeros_like(crushing)
-    for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_area:
-            filtered_crushing[labels == i] = 255
     
+    for i in range(1, num_labels):
+        width = stats[i, cv2.CC_STAT_WIDTH]
+        height = stats[i, cv2.CC_STAT_HEIGHT]
+        aspect_ratio = width / max(1, height)  # Avoid division by zero
+
+        # Apply size filtering (must be large enough) and aspect ratio filtering (not too narrow)
+        if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 2:
+            filtered_crushing[labels == i] = 255
+
     return filtered_crushing
 
 def process_damaged_image(image):
@@ -161,7 +178,6 @@ def process_damaged_image(image):
     
     # Create final binary output (white background)
     final_output = np.full_like(cracks_mask, 255)
-    final_output = np.full_like(crushing_mask, 255)
     
     # Set cracks as thin black lines
     final_output[cracks_mask > 0] = 0
