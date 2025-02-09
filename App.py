@@ -81,7 +81,7 @@ def detect_cracks(image):
     image = cv2.resize(image, (224, 224))
 
     # Apply Gaussian Blur for noise reduction
-    denoised = cv2.GaussianBlur(image, (3, 3), 0)  # Lower kernel size to reduce smoothing
+    denoised = cv2.GaussianBlur(image, (3, 3), 0)
 
     # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -91,19 +91,19 @@ def detect_cracks(image):
     edges = cv2.Canny(enhanced, 80, 180)
 
     # Apply Morphological Closing (filling small gaps)
-    kernel = np.ones((3, 3), np.uint8)  # Slightly smaller kernel for better detail preservation
-    cracks = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=1)  # Less iterations to keep cracks thin
+    kernel = np.ones((3, 3), np.uint8)
+    cracks = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=1)
 
     # Remove small noise using Connected Components Analysis
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cracks, connectivity=8)
-    min_area = 50  # Minimum area to remove small noise (adjusted to keep more details)
+    min_area = 50  # Minimum area to remove small noise
     filtered_cracks = np.zeros_like(cracks)
 
     for i in range(1, num_labels):
         if stats[i, cv2.CC_STAT_AREA] >= min_area:
             filtered_cracks[labels == i] = 255
 
-    # Thinning: Reduce the thickness of cracks (without making them too thin)
+    # Thinning: Reduce the thickness of cracks
     thin_cracks = cv2.ximgproc.thinning(filtered_cracks)
 
     return thin_cracks
@@ -137,25 +137,29 @@ def detect_crushing(image):
 
     # Step 3: Remove thin edges (to eliminate cracks)
     kernel = np.ones((3, 3), np.uint8)
-    thickened = cv2.dilate(crushing, kernel, iterations=2)  # Increase thickness to remove small cracks
+    thickened = cv2.dilate(crushing, kernel, iterations=2)
 
     # Step 4: Remove false detections by filtering based on intensity
-    mean_intensity = np.mean(image)  # Get global intensity of the image
+    mean_intensity = np.mean(image)
     crushing[image > mean_intensity - 30] = 0  # Remove bright regions that were misclassified
 
     # Step 5: Morphological Closing to refine crushing areas
     kernel = np.ones((5, 5), np.uint8)
     crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # Step 6: Filter out small areas that might be cracks
+    # Step 6: Remove cracks using Edge Detection
+    edges = cv2.Canny(enhanced, 50, 150)
+    crushing[edges > 0] = 0  # Remove detected cracks from crushing mask
+
+    # Step 7: Filter out small areas that might be cracks
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 2500  # Increase to avoid misclassification of cracks as crushing
+    min_area = 2500  # Minimum area for crushing detection
     filtered_crushing = np.zeros_like(crushing)
     
     for i in range(1, num_labels):
         width = stats[i, cv2.CC_STAT_WIDTH]
         height = stats[i, cv2.CC_STAT_HEIGHT]
-        aspect_ratio = width / max(1, height)  # Avoid division by zero
+        aspect_ratio = width / max(1, height)
 
         # Apply size filtering (must be large enough) and aspect ratio filtering (not too narrow)
         if stats[i, cv2.CC_STAT_AREA] >= min_area and aspect_ratio < 2:
@@ -186,7 +190,6 @@ def process_damaged_image(image):
     final_output[crushing_mask > 0] = 0
     
     return final_output
-
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
