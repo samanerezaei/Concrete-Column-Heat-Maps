@@ -71,46 +71,9 @@ def convert_pil_to_numpy(image):
     
     return image
 
-def detect_cracks(image):
-    """
-    Detect cracking damage with reduced thickness and no broken lines.
-    """
-    image = convert_pil_to_numpy(image)
-
-    # Resize image for consistency
-    image = cv2.resize(image, (224, 224))
-
-    # Apply Gaussian Blur for noise reduction
-    denoised = cv2.GaussianBlur(image, (3, 3), 0)
-
-    # Apply CLAHE for contrast enhancement
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(denoised)
-
-    # Apply Canny Edge Detection for cracks
-    edges = cv2.Canny(enhanced, 80, 180)
-
-    # Apply Morphological Closing (filling small gaps)
-    kernel = np.ones((3, 3), np.uint8)
-    cracks = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=1)
-
-    # Remove small noise using Connected Components Analysis
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cracks, connectivity=8)
-    min_area = 50  # Minimum area to remove small noise
-    filtered_cracks = np.zeros_like(cracks)
-
-    for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_area:
-            filtered_cracks[labels == i] = 255
-
-    # Thinning: Reduce the thickness of cracks
-    thin_cracks = cv2.ximgproc.thinning(filtered_cracks)
-
-    return thin_cracks
-
 def detect_crushing(image):
     """
-    Detect crushing damage as solid black areas while avoiding misclassification of cracks.
+    Detect crushing damage as solid black areas while avoiding misclassification of cracks or shadows.
     """
     image = convert_pil_to_numpy(image)
 
@@ -139,17 +102,25 @@ def detect_crushing(image):
     kernel = np.ones((3, 3), np.uint8)
     thickened = cv2.dilate(crushing, kernel, iterations=2)
 
-    # Step 4: Remove false detections by filtering based on intensity
+    # Step 4: Remove false detections by filtering based on intensity (shadows)
     mean_intensity = np.mean(image)
-    crushing[image > mean_intensity - 30] = 0  # Remove bright regions that were misclassified
+    crushing[image > mean_intensity - 30] = 0  # حذف نواحی با شدت روشنایی بالا
 
     # Step 5: Morphological Closing to refine crushing areas
     kernel = np.ones((5, 5), np.uint8)
     crushing = cv2.morphologyEx(crushing, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # Step 6: Remove cracks using Edge Detection
-    edges = cv2.Canny(enhanced, 50, 150)
-    crushing[edges > 0] = 0  # Remove detected cracks from crushing mask
+    # Step 6: Remove cracks using Edge Detection (Sobel to detect fine edges)
+    sobelx = cv2.Sobel(enhanced, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(enhanced, cv2.CV_64F, 0, 1, ksize=3)
+    sobel_edges = cv2.magnitude(sobelx, sobely)
+    sobel_edges = np.uint8(sobel_edges)
+
+    # Apply a threshold to get crack areas
+    _, sobel_mask = cv2.threshold(sobel_edges, 50, 255, cv2.THRESH_BINARY)
+
+    # Remove cracks from crushing mask
+    crushing = cv2.bitwise_and(crushing, cv2.bitwise_not(sobel_mask))
 
     # Step 7: Filter out small areas that might be cracks
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
@@ -169,27 +140,17 @@ def detect_crushing(image):
 
 def process_damaged_image(image):
     """
-    Process the image to detect cracking and crushing damages.
+    Process the image to detect cracking and crushing damages separately.
     """
     image = convert_pil_to_numpy(image)
     
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
-    # Detect cracks and crushing
-    cracks_mask = detect_cracks(image)
+    # Detect crushing separately
     crushing_mask = detect_crushing(image)
     
-    # Create final binary output (white background)
-    final_output = np.full_like(cracks_mask, 255)
-    
-    # Set cracks as thin black lines
-    final_output[cracks_mask > 0] = 0
-    
-    # Set crushing as solid black areas
-    final_output[crushing_mask > 0] = 0
-    
-    return final_output
+    return crushing_mask
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
