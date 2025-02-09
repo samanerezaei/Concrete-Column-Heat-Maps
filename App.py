@@ -173,29 +173,21 @@ def detect_crushing(image):
 
 def process_damaged_image(image):
     """
-    Process the image to detect cracking and crushing damages.
+    Process the image to detect cracking and crushing damages separately.
     """
     image = convert_pil_to_numpy(image)
     
     # Resize to (224, 224) for model consistency
     image = cv2.resize(image, (224, 224))
     
-    # Detect cracks and crushing
+    # Detect cracks and crushing separately
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
-    
-    # Create final binary output (پس‌زمینه مشکی)
-    final_output = np.full_like(cracks_mask, 0)
-    
-    # Set cracks as thin black lines
-    final_output[cracks_mask > 0] = 255
-    
-    # Set crushing as solid black areas
-    final_output[crushing_mask > 0] = 255
-    
-    final_output = 255 - final_output
 
-    return final_output
+    cracks_mask = 255 - cracks_mask
+    crushing_mask = 255 - crushing_mask
+    
+    return cracks_mask, crushing_mask
 
 
 # Streamlit App Section
