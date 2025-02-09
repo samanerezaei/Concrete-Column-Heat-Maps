@@ -173,14 +173,15 @@ def process_damaged_image(image):
     image = cv2.resize(image, (224, 224))
     
     # Detect cracks and crushing
-    cracks_mask = detect_cracks(image)
+    #cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
     
     # Create final binary output (white background)
-    final_output = np.full_like(cracks_mask, 255)
+    #final_output = np.full_like(cracks_mask, 255)
+    final_output = np.full_like(crushing_mask, 255)
     
     # Set cracks as thin black lines
-    final_output[cracks_mask > 0] = 0
+    #final_output[cracks_mask > 0] = 0
     
     # Set crushing as solid black areas
     final_output[crushing_mask > 0] = 0
