@@ -158,10 +158,11 @@ def process_damaged_image(image):
     cracks_mask = cv2.resize(cracks_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
     crushing_mask = cv2.resize(crushing_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
 
-    # Now combine the masks, considering their weight or relevance
-    combined_mask = cv2.bitwise_or(cracks_mask, crushing_mask)
+    # Now combine the masks using weighted sum for better control over combining
+    combined_mask = cv2.addWeighted(cracks_mask, 0.5, crushing_mask, 0.5, 0)
 
     return cracks_mask, crushing_mask, combined_mask
+
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
