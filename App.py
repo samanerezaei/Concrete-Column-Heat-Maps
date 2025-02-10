@@ -145,19 +145,19 @@ def detect_crushing(image):
 
 def process_damaged_image(image):
     """
-    Process the image at high resolution first, then resize to (224, 224) with high quality.
+    Process the image to detect both cracks and crushing in separate masks, then combine them.
     """
-    image = convert_pil_to_numpy(image)
-
     # Detect cracks and crushing at original size
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
 
-    # Resize with better interpolation (INTER_CUBIC for higher quality)
-    cracks_mask = cv2.resize(cracks_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
-    crushing_mask = cv2.resize(crushing_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
+    # Combine the two damage types using bitwise OR
+    combined_damage = cv2.bitwise_or(cracks_mask, crushing_mask)
 
-    return cracks_mask, crushing_mask
+    # Resize with better interpolation (INTER_CUBIC for higher quality)
+    combined_damage = cv2.resize(combined_damage, (224, 224), interpolation=cv2.INTER_CUBIC)
+
+    return combined_damage
 
 
 # Streamlit App Section
@@ -360,51 +360,42 @@ elif section == 'Prediction':
     
         # Process the image    
         # Process the image
-        cracks_mask, crushing_mask = process_damaged_image(img)
-    
+        #cracks_mask, crushing_mask = process_damaged_image(img)
+        damage_mask = process_damaged_image(img)
+        
         # Ensure processed images are in correct format for display
-        cracks_mask_display = Image.fromarray(cracks_mask)
-        crushing_mask_display = Image.fromarray(crushing_mask)
+        #cracks_mask_display = Image.fromarray(cracks_mask)
+        #crushing_mask_display = Image.fromarray(crushing_mask)
     
         # Display images separately
-        st.subheader("Detected Crack and Crushing Maps")
-        col1, col2, col3 = st.columns(3)
+        #st.subheader("Detected Crack and Crushing Maps")
+        #col1, col2, col3 = st.columns(3)
         
         #mask_display_height = int(aspect * 100)
         #cracks_mask_display = cracks_mask_display.resize((100, mask_display_height))
         #crushing_mask_display = crushing_mask_display.resize((100, mask_display_height))
         
-        with col1:
-            st.image(cracks_mask_display, caption="Crack Detection", use_column_width=True)
+        #with col1:
+        #    st.image(cracks_mask_display, caption="Crack Detection", use_column_width=True)
         
-        with col2:
-            st.image(crushing_mask_display, caption="Crushing Detection", use_column_width=True)
+        #with col2:
+        #    st.image(crushing_mask_display, caption="Crushing Detection", use_column_width=True)
     
         # Convert masks to binary (ensure they contain only 0 and 255)
         #cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
         #crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
         
-        # Ensure that both masks are binary (0 or 255)
-        cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
-        crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
+        # Use bitwise OR to combine masks without losing information
+        #binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
         
-        # Create a new combined mask
-        binary_img = np.maximum(cracks_mask, crushing_mask)
-        
-        # If the crushing mask was entirely zero, combine them by adding them
-        # This ensures that both cracks and crushing are included even if one of the masks is entirely zero.
-        if np.max(crushing_mask) == 0:
-            binary_img = cracks_mask
-        
-        # Display or return the combined image
-        binary_img_display = Image.fromarray(binary_img)
-        
+        binary_img = Image.fromarray(damage_mask)
+
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
         
-        binary_img_display = Image.fromarray(binary_img)
-        with col3:
-            st.image(binary_img_display, caption="Crack + Crushing Detection", use_column_width=True)
+        #binary_img_display = Image.fromarray(binary_img)
+        #with col3:
+        #    st.image(binary_img_display, caption="Crack + Crushing Detection", use_column_width=True)
 
         # Display the final combined image
         #st.subheader("Final Combined Damage Map")
