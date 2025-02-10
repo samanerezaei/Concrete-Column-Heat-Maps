@@ -56,6 +56,10 @@ def enhance_image_contrast(image):
     return clahe.apply(image)
 
 
+import cv2
+import numpy as np
+from PIL import Image
+
 def convert_pil_to_numpy(image):
     """
     Convert a PIL image to a NumPy array, ensuring grayscale format.
@@ -73,14 +77,24 @@ def detect_cracks(image):
     Detect cracks while preserving fine details. Cracks should be black (0) and background white (255).
     """
     image = convert_pil_to_numpy(image)
+
+    # Gaussian Blur to reduce noise
     denoised = cv2.GaussianBlur(image, (3, 3), 0)
+
+    # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
     enhanced = clahe.apply(denoised)
+
+    # Apply Canny Edge Detection
     edges = cv2.Canny(enhanced, 80, 180)
+
+    # Apply Morphological Closing to fill small gaps
     kernel = np.ones((3, 3), np.uint8)
     cracks = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=1)
+
+    # Remove small noise using Connected Components
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cracks, connectivity=8)
-    min_area = 50
+    min_area = 50  
     filtered_cracks = np.zeros_like(cracks)
 
     for i in range(1, num_labels):
@@ -89,6 +103,8 @@ def detect_cracks(image):
 
     # Thinning to reduce thickness of cracks
     thin_cracks = cv2.ximgproc.thinning(filtered_cracks)
+
+    # Ensure cracks are black and background is white
     cracks_output = np.full_like(thin_cracks, 255)
     cracks_output[thin_cracks > 0] = 0  
 
@@ -99,18 +115,29 @@ def detect_crushing(image):
     Detect crushing using Adaptive Thresholding and Connected Components.
     """
     image = convert_pil_to_numpy(image)
+
+    # Apply Gaussian Blur
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
-    adaptive_thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 10)
+
+    # Adaptive Thresholding for primary crushing mask
+    adaptive_thresh = cv2.adaptiveThreshold(
+        blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 10
+    )
+
+    # Apply Morphological Closing to refine crushing regions
     kernel = np.ones((7, 7), np.uint8)
     crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+    # Remove small regions using Connected Components
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 2000
+    min_area = 2000  # Reduce this value if some crushing areas are missing
     filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
         if stats[i, cv2.CC_STAT_AREA] >= min_area:
             filtered_crushing[labels == i] = 255
 
+    # Ensure crushing is black and background is white
     crushing_output = np.full_like(filtered_crushing, 255)
     crushing_output[filtered_crushing > 0] = 0  
 
@@ -118,18 +145,20 @@ def detect_crushing(image):
 
 def process_damaged_image(image):
     """
-    Process the image to detect both cracks and crushing in separate masks, then combine them.
+    Process the image at high resolution first, then resize to (224, 224) with high quality.
     """
+    image = convert_pil_to_numpy(image)
+
+    # Detect cracks and crushing at original size
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
 
-    # Combine the two damage types using bitwise OR, ensuring no information is lost.
-    combined_damage = cv2.bitwise_or(cracks_mask, crushing_mask)
-
     # Resize with better interpolation (INTER_CUBIC for higher quality)
-    combined_damage = cv2.resize(combined_damage, (224, 224), interpolation=cv2.INTER_CUBIC)
+    cracks_mask = cv2.resize(cracks_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
+    crushing_mask = cv2.resize(crushing_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
 
-    return combined_damage
+    return cracks_mask, crushing_mask
+
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
@@ -326,65 +355,49 @@ elif section == 'Prediction':
         
     # Upload and process the image
     uploaded_image = st.file_uploader('Upload an image of a damaged RC column', type=['jpg', 'jpeg', 'png'])
-    
     if uploaded_image is not None:
         img = Image.open(uploaded_image)
-        
+    
+        # Process the image    
         # Process the image
-        #cracks_mask, crushing_mask = process_damaged_image(img)
-        damage_mask = process_damaged_image(img)
-        
-        # Display processed damage map
-        damage_img = Image.fromarray(damage_mask)
-        
-        st.image(damage_img, caption="Detected Damage Map (Cracks + Crushing)", use_column_width=True)
-        
+        cracks_mask, crushing_mask = process_damaged_image(img)
+    
         # Ensure processed images are in correct format for display
-        #cracks_mask_display = Image.fromarray(cracks_mask)
-        #crushing_mask_display = Image.fromarray(crushing_mask)
+        cracks_mask_display = Image.fromarray(cracks_mask)
+        crushing_mask_display = Image.fromarray(crushing_mask)
     
         # Display images separately
-        #st.subheader("Detected Crack and Crushing Maps")
-        #col1, col2, col3 = st.columns(3)
+        st.subheader("Detected Crack and Crushing Maps")
+        col1, col2 = st.columns(2)
+    
+        with col1:
+            st.image(cracks_mask_display, caption="Crack Detection", use_column_width=True)
         
-        #mask_display_height = int(aspect * 100)
-        #cracks_mask_display = cracks_mask_display.resize((100, mask_display_height))
-        #crushing_mask_display = crushing_mask_display.resize((100, mask_display_height))
-        
-        #with col1:
-        #    st.image(cracks_mask_display, caption="Crack Detection", use_column_width=True)
-        
-        #with col2:
-        #    st.image(crushing_mask_display, caption="Crushing Detection", use_column_width=True)
+        with col2:
+            st.image(crushing_mask_display, caption="Crushing Detection", use_column_width=True)
     
         # Convert masks to binary (ensure they contain only 0 and 255)
         #cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
         #crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
         
         # Use bitwise OR to combine masks without losing information
-        #binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
-        
-        binary_img = Image.fromarray(damage_mask)
+        binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
 
+        
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
         
-        #binary_img_display = Image.fromarray(binary_img)
-        #with col3:
-        #    st.image(binary_img_display, caption="Crack + Crushing Detection", use_column_width=True)
-
+        binary_img_display = Image.fromarray(binary_img)
+    
         # Display the final combined image
-        #st.subheader("Final Combined Damage Map")
-        #st.image(binary_img_display, caption="Final Damage Map (Cracks + Crushing)", use_column_width=True)
+        st.subheader("Final Combined Damage Map")
+        st.image(binary_img_display, caption="Final Damage Map (Cracks + Crushing)", use_column_width=True)
         
-        # Convert the PIL image to a NumPy array before applying OpenCV functions
-        binary_img_np = np.array(binary_img)
-        
-        # Now apply cv2.cvtColor to convert to RGB
-        binary_img_rgb = cv2.cvtColor(binary_img_np, cv2.COLOR_GRAY2RGB)
-        
+        binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
+
+    
         # Expand dimensions to match model input
-        binary_img = np.expand_dims(binary_img_rgb, axis=0)  # Add batch dimension
+        binary_img = np.expand_dims(binary_img, axis=0)  # Add batch dimension
     
         # Expand aspect to match batch dimension
         aspect_array = np.expand_dims([aspect], axis=0)
