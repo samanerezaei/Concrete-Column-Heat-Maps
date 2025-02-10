@@ -385,7 +385,14 @@ elif section == 'Prediction':
         #crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
         
         # Use bitwise OR to combine masks without losing information
+        # Check if crushing_mask has any non-zero pixels
+        if np.sum(crushing_mask) == 0:
+            # If no crushing detected, we can set crushing_mask to an array of 255 (white) to avoid overwriting it
+            crushing_mask = np.full_like(crushing_mask, 255)
+        
+        # Now we can combine the two masks without losing information
         binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
+
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
