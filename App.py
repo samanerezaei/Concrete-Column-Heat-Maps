@@ -392,7 +392,7 @@ elif section == 'Prediction':
         
         binary_img_display = Image.fromarray(binary_img)
         with col3:
-            st.image(binary_img_display, caption="Crushing Detection", use_column_width=True)
+            st.image(binary_img_display, caption="Crack + Crushing Detection", use_column_width=True)
 
         # Display the final combined image
         #st.subheader("Final Combined Damage Map")
