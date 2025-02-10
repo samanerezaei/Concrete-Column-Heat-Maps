@@ -146,6 +146,7 @@ def detect_crushing(image):
 def process_damaged_image(image):
     """
     Process the image at high resolution first, then resize to (224, 224) with high quality.
+    Detect cracks and crushing in separate masks and combine them.
     """
     image = convert_pil_to_numpy(image)
 
@@ -157,7 +158,10 @@ def process_damaged_image(image):
     cracks_mask = cv2.resize(cracks_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
     crushing_mask = cv2.resize(crushing_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
 
-    return cracks_mask, crushing_mask
+    # Now combine the masks, considering their weight or relevance
+    combined_mask = cv2.bitwise_or(cracks_mask, crushing_mask)
+
+    return cracks_mask, crushing_mask, combined_mask
 
 
 # Streamlit App Section
@@ -361,28 +365,33 @@ elif section == 'Prediction':
         # Process the image    
         # Process the image
         cracks_mask, crushing_mask = process_damaged_image(img)
-    
+        combined_mask = process_damaged_image(img)
+        
         # Ensure processed images are in correct format for display
         cracks_mask_display = Image.fromarray(cracks_mask)
         crushing_mask_display = Image.fromarray(crushing_mask)
-    
+        combined_mask_display = Image.fromarray(combined_mask)
+
         # Display images separately
         st.subheader("Detected Crack and Crushing Maps")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
     
         with col1:
             st.image(cracks_mask_display, caption="Crack Detection", use_column_width=True)
         
         with col2:
             st.image(crushing_mask_display, caption="Crushing Detection", use_column_width=True)
-    
+            
+        with col3:
+            st.image(combined_mask_display, caption="Crack + Crushing Detection", use_column_width=True)
+
         # Convert masks to binary (ensure they contain only 0 and 255)
         #cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
         #crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
         
         # Use bitwise OR to combine masks without losing information
-        binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
-
+        #binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
+        binary_img = cv2.bitwise_or(combined_mask_display)
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
