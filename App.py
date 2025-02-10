@@ -377,8 +377,8 @@ elif section == 'Prediction':
             st.image(crushing_mask_display, caption="Crushing Detection", use_column_width=True)
     
         # Convert masks to binary (ensure they contain only 0 and 255)
-        cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
-        crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
+        #cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
+        #crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
         
         # Use bitwise OR to combine masks without losing information
         binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
