@@ -395,7 +395,7 @@ elif section == 'Prediction':
         
         # Use bitwise OR to combine masks without losing information
         #binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
-        binary_img = cv2.bitwise_or(combined_mask_display)
+        binary_img = combined_mask_display
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
