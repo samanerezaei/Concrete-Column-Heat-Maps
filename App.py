@@ -147,6 +147,7 @@ def process_damaged_image(image):
     """
     Process the image at high resolution first, then resize to (224, 224) with high quality.
     Detect cracks and crushing in separate masks and combine them.
+    Ensure damage areas are black and the rest are white.
     """
     image = convert_pil_to_numpy(image)
 
@@ -158,10 +159,14 @@ def process_damaged_image(image):
     cracks_mask = cv2.resize(cracks_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
     crushing_mask = cv2.resize(crushing_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
 
-    # Now combine the masks using weighted sum for better control over combining
-    combined_mask = cv2.addWeighted(cracks_mask, 0.5, crushing_mask, 0.5, 0)
+    # Combine the two masks using bitwise OR
+    combined_mask = cv2.bitwise_or(cracks_mask, crushing_mask)
+
+    # Make all damage areas black (0) and the rest white (255)
+    combined_mask[combined_mask > 0] = 0  # Make all damage areas black
 
     return cracks_mask, crushing_mask, combined_mask
+
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
