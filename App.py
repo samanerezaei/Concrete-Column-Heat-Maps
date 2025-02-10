@@ -384,18 +384,20 @@ elif section == 'Prediction':
         #cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
         #crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
         
-        # Use bitwise OR to combine masks without losing information
-        # Create a new image by combining both masks
         # Ensure that both masks are binary (0 or 255)
-        cracks_mask = (cracks_mask > 0).astype() * 255
-        crushing_mask = (crushing_mask > 0).astype() * 255
+        cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
+        crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
         
-        # Combine both masks by taking the maximum value (to ensure both cracks and crushing are shown)
-        binary_img = cracks_mask + crushing_mask
+        # Create a new combined mask
+        binary_img = np.maximum(cracks_mask, crushing_mask)
         
-        # Ensure that the values don't exceed 255 (in case of overlap)
-        binary_img[binary_img > 255] = 255
-
+        # If the crushing mask was entirely zero, combine them by adding them
+        # This ensures that both cracks and crushing are included even if one of the masks is entirely zero.
+        if np.max(crushing_mask) == 0:
+            binary_img = cracks_mask
+        
+        # Display or return the combined image
+        binary_img_display = Image.fromarray(binary_img)
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
