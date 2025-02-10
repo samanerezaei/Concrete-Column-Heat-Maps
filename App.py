@@ -390,8 +390,8 @@ elif section == 'Prediction':
         binary_img_display = Image.fromarray(binary_img)
     
         # Display the final combined image
-        st.subheader("Final Combined Damage Map")
-        st.image(binary_img_display, caption="Final Damage Map (Cracks + Crushing)", use_column_width=True)
+        #st.subheader("Final Combined Damage Map")
+        #st.image(binary_img_display, caption="Final Damage Map (Cracks + Crushing)", use_column_width=True)
         
         binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
 
