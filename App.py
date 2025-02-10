@@ -376,8 +376,13 @@ elif section == 'Prediction':
         with col2:
             st.image(crushing_mask_display, caption="Crushing Detection", use_column_width=True)
     
-        # Combine crack and crushing masks
-        binary_img = np.maximum(cracks_mask, crushing_mask)
+        # Convert masks to binary (ensure they contain only 0 and 255)
+        cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
+        crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
+        
+        # Use bitwise OR to combine masks without losing information
+        binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
+
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
