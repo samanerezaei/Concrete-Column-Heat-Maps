@@ -387,8 +387,8 @@ elif section == 'Prediction':
         # Use bitwise OR to combine masks without losing information
         # Create a new image by combining both masks
         # Ensure that both masks are binary (0 or 255)
-        cracks_mask = (cracks_mask > 0).astype(np.uint8)
-        crushing_mask = (crushing_mask > 0).astype(np.uint8)
+        cracks_mask = (cracks_mask > 0).astype(np.uint8) * 255
+        crushing_mask = (crushing_mask > 0).astype(np.uint8) * 255
         
         # Combine both masks by taking the maximum value (to ensure both cracks and crushing are shown)
         binary_img = cracks_mask + crushing_mask
