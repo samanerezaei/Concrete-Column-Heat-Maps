@@ -369,7 +369,11 @@ elif section == 'Prediction':
         # Display images separately
         st.subheader("Detected Crack and Crushing Maps")
         col1, col2 = st.columns(2)
-    
+        
+        mask_display_height = int(aspect * 100)
+        cracks_mask_display = cracks_mask_display.resize((100, mask_display_height))
+        crushing_mask_display = crushing_mask_display.resize((100, mask_display_height))
+        
         with col1:
             st.image(cracks_mask_display, caption="Crack Detection", use_column_width=True)
         
