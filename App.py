@@ -90,38 +90,37 @@ def detect_cracks(image):
     return cracks_output
 
 def detect_crushing(image):
-    """Detect crushing using Adaptive Thresholding and Connected Components."""
+    """Detect crushing based on area (size) of the regions. No line detection involved."""
     image = convert_pil_to_numpy(image)
 
-    # Apply Gaussian Blur
+    # Apply Gaussian Blur to reduce noise
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
 
-    # Adaptive Thresholding for primary crushing mask
+    # Apply Adaptive Thresholding for primary crushing mask, reduce sensitivity
     adaptive_thresh = cv2.adaptiveThreshold(
-        blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 10
+        blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 5  # Reduced the sensitivity (5 instead of 10)
     )
 
-    # Apply Morphological Closing to refine crushing regions
+    # Apply Morphological Closing to fill small gaps and refine crushing areas
     kernel = np.ones((7, 7), np.uint8)
     crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # Remove small regions using Connected Components
+    # Remove small regions using Connected Components (min_area)
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
     
-    # Increase min_area to avoid small regions being marked as crushing
-    min_area = 1000  # You can adjust this value based on your image to filter out small regions
+    # Set a threshold for the area (min_area) to filter out smaller regions
+    min_area = 1000  # You can adjust this value based on your image to focus only on larger regions
     filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_area:  # Only keep regions with enough area
+        if stats[i, cv2.CC_STAT_AREA] >= min_area:  # Only keep large areas as crushing
             filtered_crushing[labels == i] = 255
 
-    # Ensure crushing is black and background is white
+    # Ensure the output is black for crushing and white for background
     crushing_output = np.full_like(filtered_crushing, 255)
-    crushing_output[filtered_crushing > 0] = 0  # Set crushing areas to black
+    crushing_output[filtered_crushing > 0] = 0  # Set detected crushing areas to black
 
     return crushing_output
-
 
 def process_damaged_image(image):
     """
