@@ -56,6 +56,10 @@ def enhance_image_contrast(image):
     return clahe.apply(image)
 
 
+import cv2
+import numpy as np
+from PIL import Image
+
 def convert_pil_to_numpy(image):
     """
     Convert a PIL image to a NumPy array, ensuring grayscale format.
@@ -108,38 +112,26 @@ def detect_cracks(image):
 
 def detect_crushing(image):
     """
-    Detect crushing using K-Means clustering.
+    Detect crushing using Adaptive Thresholding and Connected Components.
     """
     image = convert_pil_to_numpy(image)
 
     # Apply Gaussian Blur
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
 
-    # Normalize image for clustering
-    reshaped_image = blurred.reshape((-1, 1))
-    reshaped_image = np.float32(reshaped_image)
+    # Adaptive Thresholding for primary crushing mask
+    adaptive_thresh = cv2.adaptiveThreshold(
+        blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 10
+    )
 
-    # Apply K-Means Clustering
-    k = 3  # Number of clusters
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    _, labels, centers = cv2.kmeans(reshaped_image, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-
-    # Convert centers to integer values
-    centers = np.uint8(centers)
-    clustered_image = centers[labels.flatten()]
-    clustered_image = clustered_image.reshape(image.shape)
-
-    # Threshold to separate crushing areas (darker regions)
-    _, crushing_mask = cv2.threshold(clustered_image, np.min(centers) + 10, 255, cv2.THRESH_BINARY_INV)
-
-    # Apply Morphological Closing
+    # Apply Morphological Closing to refine crushing regions
     kernel = np.ones((7, 7), np.uint8)
-    crushing_mask = cv2.morphologyEx(crushing_mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+    crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # Remove small regions
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing_mask, connectivity=8)
-    min_area = 2000  
-    filtered_crushing = np.zeros_like(crushing_mask)
+    # Remove small regions using Connected Components
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
+    min_area = 2000  # Reduce this value if some crushing areas are missing
+    filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
         if stats[i, cv2.CC_STAT_AREA] >= min_area:
@@ -153,7 +145,7 @@ def detect_crushing(image):
 
 def process_damaged_image(image):
     """
-    Process the image at high resolution first, then resize to (224, 224).
+    Process the image at high resolution first, then resize to (224, 224) with high quality.
     """
     image = convert_pil_to_numpy(image)
 
@@ -161,11 +153,12 @@ def process_damaged_image(image):
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
 
-    # Resize to 224x224 after processing
-    cracks_mask = cv2.resize(cracks_mask, (224, 224), interpolation=cv2.INTER_NEAREST)
-    crushing_mask = cv2.resize(crushing_mask, (224, 224), interpolation=cv2.INTER_NEAREST)
+    # Resize with better interpolation (INTER_CUBIC for higher quality)
+    cracks_mask = cv2.resize(cracks_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
+    crushing_mask = cv2.resize(crushing_mask, (224, 224), interpolation=cv2.INTER_CUBIC)
 
     return cracks_mask, crushing_mask
+
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
