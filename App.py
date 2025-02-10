@@ -107,7 +107,7 @@ def detect_crushing(image):
 
     # Remove small regions using Connected Components
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 500  # Reduce this value if some crushing areas are missing
+    min_area = 1000  # Adjust this value to filter smaller areas for crushing detection
     filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
@@ -143,8 +143,6 @@ def process_damaged_image(image):
     combined_mask[combined_mask != 255] = 0
 
     return cracks_mask, crushing_mask, combined_mask
-
-
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
