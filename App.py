@@ -107,11 +107,13 @@ def detect_crushing(image):
 
     # Remove small regions using Connected Components
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 1000  # Adjust this value to filter smaller areas for crushing detection
+    
+    # Increase min_area to avoid small regions being marked as crushing
+    min_area = 1000  # You can adjust this value based on your image to filter out small regions
     filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
-        if stats[i, cv2.CC_STAT_AREA] >= min_area:
+        if stats[i, cv2.CC_STAT_AREA] >= min_area:  # Only keep regions with enough area
             filtered_crushing[labels == i] = 255
 
     # Ensure crushing is black and background is white
@@ -119,6 +121,7 @@ def detect_crushing(image):
     crushing_output[filtered_crushing > 0] = 0  # Set crushing areas to black
 
     return crushing_output
+
 
 def process_damaged_image(image):
     """
