@@ -401,10 +401,14 @@ elif section == 'Prediction':
         #st.subheader("Final Combined Damage Map")
         #st.image(binary_img_display, caption="Final Damage Map (Cracks + Crushing)", use_column_width=True)
         
-        binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
+        # Convert the PIL image to a NumPy array before applying OpenCV functions
+        binary_img_np = np.array(binary_img)
+        
+        # Now apply cv2.cvtColor to convert to RGB
+        binary_img_rgb = cv2.cvtColor(binary_img_np, cv2.COLOR_GRAY2RGB)
         
         # Expand dimensions to match model input
-        binary_img = np.expand_dims(binary_img, axis=0)  # Add batch dimension
+        binary_img = np.expand_dims(binary_img_rgb, axis=0)  # Add batch dimension
     
         # Expand aspect to match batch dimension
         aspect_array = np.expand_dims([aspect], axis=0)
