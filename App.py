@@ -55,10 +55,11 @@ def enhance_image_contrast(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     return clahe.apply(image)
 
-
+import io
 import cv2
 import numpy as np
 from PIL import Image
+import streamlit as st
 
 def convert_pil_to_numpy(image):
     """
@@ -77,24 +78,14 @@ def detect_cracks(image):
     Detect cracks while preserving fine details. Cracks should be black (0) and background white (255).
     """
     image = convert_pil_to_numpy(image)
-
-    # Gaussian Blur to reduce noise
     denoised = cv2.GaussianBlur(image, (3, 3), 0)
-
-    # Apply CLAHE for contrast enhancement
     clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
     enhanced = clahe.apply(denoised)
-
-    # Apply Canny Edge Detection
     edges = cv2.Canny(enhanced, 80, 180)
-
-    # Apply Morphological Closing to fill small gaps
     kernel = np.ones((3, 3), np.uint8)
     cracks = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=1)
-
-    # Remove small noise using Connected Components
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(cracks, connectivity=8)
-    min_area = 50  
+    min_area = 50
     filtered_cracks = np.zeros_like(cracks)
 
     for i in range(1, num_labels):
@@ -103,8 +94,6 @@ def detect_cracks(image):
 
     # Thinning to reduce thickness of cracks
     thin_cracks = cv2.ximgproc.thinning(filtered_cracks)
-
-    # Ensure cracks are black and background is white
     cracks_output = np.full_like(thin_cracks, 255)
     cracks_output[thin_cracks > 0] = 0  
 
@@ -115,29 +104,18 @@ def detect_crushing(image):
     Detect crushing using Adaptive Thresholding and Connected Components.
     """
     image = convert_pil_to_numpy(image)
-
-    # Apply Gaussian Blur
     blurred = cv2.GaussianBlur(image, (5, 5), 0)
-
-    # Adaptive Thresholding for primary crushing mask
-    adaptive_thresh = cv2.adaptiveThreshold(
-        blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 10
-    )
-
-    # Apply Morphological Closing to refine crushing regions
+    adaptive_thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 31, 10)
     kernel = np.ones((7, 7), np.uint8)
     crushing = cv2.morphologyEx(adaptive_thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
-
-    # Remove small regions using Connected Components
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(crushing, connectivity=8)
-    min_area = 2000  # Reduce this value if some crushing areas are missing
+    min_area = 2000
     filtered_crushing = np.zeros_like(crushing)
 
     for i in range(1, num_labels):
         if stats[i, cv2.CC_STAT_AREA] >= min_area:
             filtered_crushing[labels == i] = 255
 
-    # Ensure crushing is black and background is white
     crushing_output = np.full_like(filtered_crushing, 255)
     crushing_output[filtered_crushing > 0] = 0  
 
@@ -147,11 +125,10 @@ def process_damaged_image(image):
     """
     Process the image to detect both cracks and crushing in separate masks, then combine them.
     """
-    # Detect cracks and crushing at original size
     cracks_mask = detect_cracks(image)
     crushing_mask = detect_crushing(image)
 
-    # Combine the two damage types using bitwise OR
+    # Combine the two damage types using bitwise OR, ensuring no information is lost.
     combined_damage = cv2.bitwise_or(cracks_mask, crushing_mask)
 
     # Resize with better interpolation (INTER_CUBIC for higher quality)
@@ -159,6 +136,23 @@ def process_damaged_image(image):
 
     return combined_damage
 
+
+# Streamlit App Section
+section = st.sidebar.radio('Navigation', ['Home', 'Guidelines', 'Prediction'])
+
+if section == 'Prediction':
+    uploaded_image = st.file_uploader('Upload an image of a damaged RC column', type=['jpg', 'jpeg', 'png'])
+    
+    if uploaded_image is not None:
+        img = Image.open(uploaded_image)
+        
+        # Process the image    
+        damage_mask = process_damaged_image(img)
+        
+        # Display processed damage map
+        damage_img = Image.fromarray(damage_mask)
+        
+        st.image(damage_img, caption="Detected Damage Map (Cracks + Crushing)", use_column_width=True)
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
@@ -355,13 +349,18 @@ elif section == 'Prediction':
         
     # Upload and process the image
     uploaded_image = st.file_uploader('Upload an image of a damaged RC column', type=['jpg', 'jpeg', 'png'])
+    
     if uploaded_image is not None:
         img = Image.open(uploaded_image)
-    
-        # Process the image    
+        
         # Process the image
         #cracks_mask, crushing_mask = process_damaged_image(img)
         damage_mask = process_damaged_image(img)
+        
+        # Display processed damage map
+        damage_img = Image.fromarray(damage_mask)
+        
+        st.image(damage_img, caption="Detected Damage Map (Cracks + Crushing)", use_column_width=True)
         
         # Ensure processed images are in correct format for display
         #cracks_mask_display = Image.fromarray(cracks_mask)
