@@ -386,7 +386,7 @@ elif section == 'Prediction':
         
         # Use bitwise OR to combine masks without losing information
         # Create a new image by combining both masks
-        binary_img = np.mainimum(cracks_mask, crushing_mask)
+        binary_img = np.maximum(cracks_mask, crushing_mask)
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
