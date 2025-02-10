@@ -382,7 +382,6 @@ elif section == 'Prediction':
         
         # Use bitwise OR to combine masks without losing information
         binary_img = cv2.bitwise_or(cracks_mask, crushing_mask)
-
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
@@ -394,8 +393,7 @@ elif section == 'Prediction':
         #st.image(binary_img_display, caption="Final Damage Map (Cracks + Crushing)", use_column_width=True)
         
         binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
-
-    
+        
         # Expand dimensions to match model input
         binary_img = np.expand_dims(binary_img, axis=0)  # Add batch dimension
     
