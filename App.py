@@ -55,11 +55,6 @@ def enhance_image_contrast(image):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     return clahe.apply(image)
 
-import io
-import cv2
-import numpy as np
-from PIL import Image
-import streamlit as st
 
 def convert_pil_to_numpy(image):
     """
@@ -135,24 +130,6 @@ def process_damaged_image(image):
     combined_damage = cv2.resize(combined_damage, (224, 224), interpolation=cv2.INTER_CUBIC)
 
     return combined_damage
-
-
-# Streamlit App Section
-section = st.sidebar.radio('Navigation', ['Home', 'Guidelines', 'Prediction'])
-
-if section == 'Prediction':
-    uploaded_image = st.file_uploader('Upload an image of a damaged RC column', type=['jpg', 'jpeg', 'png'])
-    
-    if uploaded_image is not None:
-        img = Image.open(uploaded_image)
-        
-        # Process the image    
-        damage_mask = process_damaged_image(img)
-        
-        # Display processed damage map
-        damage_img = Image.fromarray(damage_mask)
-        
-        st.image(damage_img, caption="Detected Damage Map (Cracks + Crushing)", use_column_width=True)
 
 # Streamlit App Section
 section = st.sidebar.radio('Navigation', ['Home','Guidelines','Prediction'])
