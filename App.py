@@ -368,11 +368,11 @@ elif section == 'Prediction':
     
         # Display images separately
         st.subheader("Detected Crack and Crushing Maps")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
-        mask_display_height = int(aspect * 100)
-        cracks_mask_display = cracks_mask_display.resize((100, mask_display_height))
-        crushing_mask_display = crushing_mask_display.resize((100, mask_display_height))
+        #mask_display_height = int(aspect * 100)
+        #cracks_mask_display = cracks_mask_display.resize((100, mask_display_height))
+        #crushing_mask_display = crushing_mask_display.resize((100, mask_display_height))
         
         with col1:
             st.image(cracks_mask_display, caption="Crack Detection", use_column_width=True)
@@ -391,7 +391,9 @@ elif section == 'Prediction':
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
         
         binary_img_display = Image.fromarray(binary_img)
-    
+        with col3:
+            st.image(binary_img_display, caption="Crushing Detection", use_column_width=True)
+
         # Display the final combined image
         #st.subheader("Final Combined Damage Map")
         #st.image(binary_img_display, caption="Final Damage Map (Cracks + Crushing)", use_column_width=True)
