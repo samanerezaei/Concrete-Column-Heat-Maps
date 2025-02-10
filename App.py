@@ -364,8 +364,7 @@ elif section == 'Prediction':
     
         # Process the image    
         # Process the image
-        cracks_mask, crushing_mask = process_damaged_image(img)
-        combined_mask = process_damaged_image(img)
+        cracks_mask, crushing_mask, combined_mask = process_damaged_image(img)
         
         # Ensure processed images are in correct format for display
         cracks_mask_display = Image.fromarray(cracks_mask)
