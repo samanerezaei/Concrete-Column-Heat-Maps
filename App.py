@@ -329,7 +329,6 @@ elif section == 'Prediction':
         EDP = 'DIS'
         meta_model_link = "https://raw.githubusercontent.com/samanerezaei/Concrete-Column-Heat-Maps/main/Models%20of%20DIS%20classification/meta_model.h5"
         model1_link = "https://raw.githubusercontent.com/samanerezaei/Concrete-Column-Heat-Maps/main/Models%20of%20DIS%20classification/model1.h5"
-        model2_link = "https://raw.githubusercontent.com/samanerezaei/Concrete-Column-Heat-Maps/main/Models%20of%20DIS%20classification/model2.h5"
 
     # Load models and test if they load successfully
     meta_model, model1, model2 = load_models(model1_link, model2_link, meta_model_link)
@@ -360,13 +359,34 @@ elif section == 'Prediction':
         img = Image.open(uploaded_image)
     
         # Process the image    
-        # Convert single-channel binary image to three channels
+        # Process the image
         cracks_mask, crushing_mask = process_damaged_image(img)
-
+    
+        # Ensure processed images are in correct format for display
+        cracks_mask_display = Image.fromarray(cracks_mask)
+        crushing_mask_display = Image.fromarray(crushing_mask)
+    
+        # Display images separately
+        st.subheader("Detected Crack and Crushing Maps")
+        col1, col2 = st.columns(2)
+    
+        with col1:
+            st.image(cracks_mask_display, caption="Crack Detection", use_column_width=True)
+        
+        with col2:
+            st.image(crushing_mask_display, caption="Crushing Detection", use_column_width=True)
+    
+        # Combine crack and crushing masks
         binary_img = np.maximum(cracks_mask, crushing_mask)
         
         if binary_img is None or binary_img.size == 0:
             raise ValueError("Error: The processed image is empty. Check the crack and crushing detection functions.")
+        
+        binary_img_display = Image.fromarray(binary_img)
+    
+        # Display the final combined image
+        st.subheader("Final Combined Damage Map")
+        st.image(binary_img_display, caption="Final Damage Map (Cracks + Crushing)", use_column_width=True)
         
         binary_img = cv2.cvtColor(binary_img, cv2.COLOR_GRAY2RGB)
 
